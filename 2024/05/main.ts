@@ -45,10 +45,14 @@ const isOrdered = (update: Array<number>): boolean => {
 };
 
 let answerOne = 0;
+let answerTwo = 0;
 
 for (const update of updates) {
   if (isOrdered(update)) {
     answerOne += update[(update.length - 1) / 2];
+  } else {
+    const sorted = update.toSorted((a, b) => isOrdered([a, b]) ? -1 : 1);
+    answerTwo += sorted[(sorted.length - 1) / 2];
   }
 }
 
@@ -56,3 +60,4 @@ console.log(`Total rules: ${rules.length}`);
 console.log(`Total updates: ${updates.length}`);
 
 console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
