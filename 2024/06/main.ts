@@ -1,13 +1,9 @@
 #!/usr/bin/env -S deno run --allow-read
-
 import { assert } from "jsr:@std/assert/assert";
 
 const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
 );
-
-// Maximum number of milliseconds before loop is declared
-const TIMEOUT_MS = 100;
 
 type XY = [number, number];
 type LabMap = Array<string>;
@@ -35,11 +31,11 @@ const inBounds = ([x, y]: XY, map: LabMap): boolean => {
   return true;
 };
 
-const walkMap = (map: LabMap): Set<string> => {
-  const start = performance.now();
+// Returns visted positions or null if looping
+const walkMap = (map: LabMap): Set<string> | null => {
   let guard: XY = getPosition(map);
   let direction = 0 as Direction;
-  const visited = new Set<string>([key(guard)]);
+  const history: Array<string> = [key(guard)];
   // Walk the guard
   while (true) {
     // Calculate next position
@@ -55,31 +51,39 @@ const walkMap = (map: LabMap): Set<string> => {
       if (++direction === 4) direction = 0;
     } else {
       guard = next;
-      visited.add(key(guard));
-    }
-    // Give up and assume loop
-    if ((performance.now() - start) > TIMEOUT_MS) {
-      throw new Error("stuck in a loop!");
+      history.push(key(guard));
+      if (history.length < 4) continue;
+      // Check if stuck in a loop
+      const previous = history.slice(-2);
+      const index = history.indexOf(previous[0]);
+      if (index > -1 && index < history.length - 2) {
+        if (history[index + 1] === previous[1]) {
+          return null;
+        }
+      }
     }
   }
-  return visited;
+  // Return unique positions
+  return new Set(history);
 };
 
 const map: LabMap = inputText.trim().split("\n");
 const visited = walkMap(map);
+assert(visited !== null, "Initial map stuck in loop");
 const answerOne = visited.size;
-let answerTwo = 0;
 
+let answerTwo = 0;
+// Iterate all unique visited positions after starting point
 for (const key of [...visited].slice(1)) {
+  const newMap = structuredClone(map);
+  // Insert obstacle at visited position
   const [x, y] = key.split("-").map((n) => Number.parseInt(n));
-  const map: LabMap = inputText.trim().split("\n");
-  const row = map[y].split("");
+  const row = newMap[y].split("");
   assert(row[x] === ".", "Visited area must be empty");
   row[x] = "#";
-  map[y] = row.join("");
-  try {
-    walkMap(map);
-  } catch {
+  newMap[y] = row.join("");
+  // Test if new map gets stuck in loop
+  if (walkMap(newMap) === null) {
     answerTwo++;
   }
 }
