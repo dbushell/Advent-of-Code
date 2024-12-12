@@ -7,39 +7,34 @@ const inputText = (await Deno.readTextFile(
 
 assert(inputText.length % 2, "Input must be odd");
 
-const setCharAt = (input: string, i: number, char: string) =>
-  input.substring(0, i) + char + input.substring(i + char.length);
+const diskArray: Array<number | string> = [];
 
-// Step one generate id string
-let diskText = "";
-for (let i = 0, id = 0; i < inputText.length; i++) {
-  diskText += new Array(Number.parseInt(inputText[i]))
-    .fill(i % 2 ? "." : id++)
-    .join("");
-}
-
-await Deno.writeTextFile(new URL("step1.txt", import.meta.url), diskText);
-
-// Step two: condense block files
-while (!/^[0-9]+\.+$/.test(diskText)) {
-  const spaceIndex = diskText.indexOf(".");
-  assert(spaceIndex > -1, "Out of space");
-  let fileIndex = diskText.length - 1;
-  while (diskText[fileIndex] === ".") {
-    fileIndex--;
-    assert(fileIndex >= 0, "No files");
+const checksum = (array: typeof diskArray): number => {
+  let sum = 0;
+  for (let i = 0; i < array.length; i++) {
+    const value = array[i];
+    if (typeof value === "string") break;
+    sum += value * i;
   }
-  diskText = setCharAt(diskText, spaceIndex, diskText[fileIndex]);
-  diskText = setCharAt(diskText, fileIndex, ".");
+  return sum;
+};
+
+// Generate disk from map
+for (let i = 0, id = 0; i < inputText.length; i++) {
+  diskArray.push(
+    ...new Array(Number.parseInt(inputText[i])).fill(i % 2 ? "." : id++),
+  );
 }
 
-await Deno.writeTextFile(new URL("step2.txt", import.meta.url), diskText);
-
-// Step three: calculate checksum
-let answerOne = 0;
-for (let i = 0; i < diskText.length; i++) {
-  if (diskText[i] === ".") break;
-  answerOne += Number.parseInt(diskText[i]) * i;
+// Part 1
+const diskOne = [...diskArray];
+for (let i = diskOne.length - 1; i > 0; i--) {
+  if (diskOne[i] === ".") continue;
+  const spaceIndex = diskOne.indexOf(".");
+  if (spaceIndex > i) break;
+  diskOne[spaceIndex] = diskOne[i];
+  diskOne[i] = ".";
 }
+const answerOne = checksum(diskOne);
 
 console.log(`Answer 1: ${answerOne}`);
