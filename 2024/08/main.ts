@@ -54,7 +54,7 @@ const orderAntennas = (a: Antenna, b: Antenna): [Antenna, Antenna] => {
 };
 
 // Calculate unique positions for part 1
-const antinodes = new Set<string>();
+const answerOne = new Set<string>();
 for (const freqency of frequencies) {
   const array = antennaByFrequency.get(freqency)!;
   // Track antennas to avoid duplicate pairs
@@ -69,14 +69,53 @@ for (const freqency of frequencies) {
       const dx = b.x + (b.x - a.x);
       const dy = b.y + (b.y - a.y);
       if (inBounds(cx, cy)) {
-        antinodes.add(`${cx}-${cy}`);
+        answerOne.add(`${cx}-${cy}`);
       }
       if (inBounds(dx, dy)) {
-        antinodes.add(`${dx}-${dy}`);
+        answerOne.add(`${dx}-${dy}`);
       }
     }
   }
 }
-const answerOne = antinodes.size;
 
-console.log(`Answer 1: ${answerOne}`);
+// Calculate unique positions for part 1
+const answerTwo = new Set<string>();
+for (const freqency of frequencies) {
+  const array = antennaByFrequency.get(freqency)!;
+  // Track antennas to avoid duplicate pairs
+  const processed = new WeakSet();
+  for (let a of array) {
+    processed.add(a);
+    for (let b of array) {
+      if (a === b || processed.has(b)) continue;
+      [a, b] = orderAntennas(a, b);
+      // Move in one direction until out of bounds
+      let cx = a.x + (a.x - b.x);
+      let cy = a.y + (a.y - b.y);
+      while (true) {
+        if (inBounds(cx, cy)) {
+          answerTwo.add(`${cx}-${cy}`);
+          cx += a.x - b.x;
+          cy += a.y - b.y;
+        } else {
+          break;
+        }
+      }
+      // Retrace steps back until out of bounds the other way
+      cx -= a.x - b.x;
+      cy -= a.y - b.y;
+      while (true) {
+        if (inBounds(cx, cy)) {
+          answerTwo.add(`${cx}-${cy}`);
+          cx -= a.x - b.x;
+          cy -= a.y - b.y;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+}
+
+console.log(`Answer 1: ${answerOne.size}`);
+console.log(`Answer 2: ${answerTwo.size}`);
