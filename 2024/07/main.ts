@@ -1,11 +1,13 @@
 #!/usr/bin/env -S deno run --allow-read
-import { assert, assertEquals } from "jsr:@std/assert";
+import { assert } from "jsr:@std/assert/assert";
 
 const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
 );
 
 const OPERATORS = ["+", "*", "||"] as const;
+
+type Deferred<T> = ReturnType<typeof Promise.withResolvers<T>>;
 
 type Operator = typeof OPERATORS[number];
 
@@ -14,7 +16,7 @@ type Branch = Array<number | Operator>;
 type Equation = {
   result: number;
   numbers: Array<number>;
-  branches: Array<Branch>;
+  deferred: Deferred<boolean> | null;
 };
 
 const equations: Array<Equation> = [];
@@ -29,31 +31,43 @@ for (const line of inputText.trim().split("\n")) {
     .map((n) => Number.parseInt(n.trim()))
     .filter((n) => !isNaN(n));
   assert(numbers.length > 1, "Equation must have numbers");
-  equations.push({ result, numbers, branches: [] });
+  equations.push({ result, numbers, deferred: null });
 }
 
-// Recursively generate all possible equation combinations
+// Recursively test all possible equation combinations
 const generateBranches = (
   eq: Equation,
   operators: Array<Operator>,
   offset: number = 0,
   branch: Array<number | Operator> = [],
 ) => {
+  // Escape if solution found
+  if (eq.deferred === null) return;
   // Start with first number
   if (offset === 0 || branch.length === 0) {
     branch = [eq.numbers.at(0)!];
     offset = 1;
   }
-  // Add branch if no more numbers
+  // Evaluate branch if no more numbers
   const nextNumber = eq.numbers.at(offset);
   if (nextNumber === undefined) {
-    eq.branches.push(branch);
+    if (evaluateBranch(branch, eq.result)) {
+      // End branch generation
+      eq.deferred.resolve(true);
+      eq.deferred = null;
+    }
     return;
   }
   // New branch for each operator
   for (const op of operators) {
+    // Escape if solution found
+    if (eq.deferred === null) return;
     const newBranch = [...branch, op, nextNumber];
     generateBranches(eq, operators, offset + 1, newBranch);
+  }
+  // Failed to find solution
+  if (offset === 1 && eq.deferred) {
+    eq.deferred.resolve(false);
   }
 };
 
@@ -81,32 +95,26 @@ const evaluateBranch = (branch: Branch, expected: number): boolean => {
 };
 
 // Returns true if one branch evaluates true
-const evaluateEquation = (eq: Equation, operator: Array<Operator>): boolean => {
-  eq.branches = [];
+const evaluateEquation = (
+  eq: Equation,
+  operator: Array<Operator>,
+): Promise<boolean> => {
+  const deferred = Promise.withResolvers<boolean>();
+  eq.deferred = deferred;
   generateBranches(eq, operator);
-  assertEquals(
-    eq.branches.length,
-    new Set(eq.branches.map((b) => b.join(" "))).size,
-    "Branches must be unique",
-  );
-  for (const branch of eq.branches) {
-    if (evaluateBranch(branch, eq.result)) {
-      return true;
-    }
-  }
-  return false;
+  return deferred.promise;
 };
 
 let answerOne = 0;
 for (const eq of equations) {
-  if (evaluateEquation(eq, ["+", "*"])) {
+  if (await evaluateEquation(eq, ["+", "*"])) {
     answerOne += eq.result;
   }
 }
 
 let answerTwo = 0;
 for (const eq of equations) {
-  if (evaluateEquation(eq, ["+", "*", "||"])) {
+  if (await evaluateEquation(eq, ["+", "*", "||"])) {
     answerTwo += eq.result;
   }
 }
