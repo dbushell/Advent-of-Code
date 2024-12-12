@@ -5,7 +5,7 @@ const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
 );
 
-const OPERATORS = ["+", "*"] as const;
+const OPERATORS = ["+", "*", "||"] as const;
 
 type Operator = typeof OPERATORS[number];
 
@@ -35,6 +35,7 @@ for (const line of inputText.trim().split("\n")) {
 // Recursively generate all possible equation combinations
 const generateBranches = (
   eq: Equation,
+  operators: Array<Operator>,
   offset: number = 0,
   branch: Array<number | Operator> = [],
 ) => {
@@ -50,9 +51,9 @@ const generateBranches = (
     return;
   }
   // New branch for each operator
-  for (const op of OPERATORS) {
+  for (const op of operators) {
     const newBranch = [...branch, op, nextNumber];
-    generateBranches(eq, offset + 1, newBranch);
+    generateBranches(eq, operators, offset + 1, newBranch);
   }
 };
 
@@ -61,12 +62,17 @@ const evaluateBranch = (branch: Branch, expected: number): boolean => {
   let result = branch[0] as number;
   for (let i = 1; i < branch.length; i += 2) {
     if (result > expected) return false;
+    const nextNumber = branch[i + 1] as number;
     if (branch[i] === "+") {
-      result += branch[i + 1] as number;
+      result += nextNumber;
       continue;
     }
     if (branch[i] === "*") {
-      result *= branch[i + 1] as number;
+      result *= nextNumber;
+      continue;
+    }
+    if (branch[i] === "||") {
+      result = Number.parseInt(`${result}${nextNumber}`);
       continue;
     }
     assert(false, "Bad branch");
@@ -75,10 +81,9 @@ const evaluateBranch = (branch: Branch, expected: number): boolean => {
 };
 
 // Returns true if one branch evaluates true
-const evaluateEquation = (eq: Equation): boolean => {
-  if (eq.branches.length === 0) {
-    generateBranches(eq);
-  }
+const evaluateEquation = (eq: Equation, operator: Array<Operator>): boolean => {
+  eq.branches = [];
+  generateBranches(eq, operator);
   assertEquals(
     eq.branches.length,
     new Set(eq.branches.map((b) => b.join(" "))).size,
@@ -94,9 +99,17 @@ const evaluateEquation = (eq: Equation): boolean => {
 
 let answerOne = 0;
 for (const eq of equations) {
-  if (evaluateEquation(eq)) {
+  if (evaluateEquation(eq, ["+", "*"])) {
     answerOne += eq.result;
   }
 }
 
+let answerTwo = 0;
+for (const eq of equations) {
+  if (evaluateEquation(eq, ["+", "*", "||"])) {
+    answerTwo += eq.result;
+  }
+}
+
 console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
