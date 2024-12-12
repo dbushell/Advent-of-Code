@@ -29,13 +29,15 @@ for (let y = 0; y < ySize; y++) {
 }
 
 // Climb a trail following all paths
-const walkTrail = (zeroX: number, zeroY: number): number => {
+const walkTrail = (zeroX: number, zeroY: number): [number, number] => {
   const peaks = new Set<string>();
+  let rating = 0;
   // Climb one level at a time
   const walk = (x: number, y: number) => {
     const current = heightAt(x, y);
     if (current === 9) {
       peaks.add(`${x}-${y}`);
+      rating++;
       return;
     }
     const next = current + 1;
@@ -46,12 +48,16 @@ const walkTrail = (zeroX: number, zeroY: number): number => {
     if (heightAt(x + 1, y) === next) walk(x + 1, y);
   };
   walk(zeroX, zeroY);
-  return peaks.size;
+  return [peaks.size, rating];
 };
 
 let answerOne = 0;
+let answerTwo = 0;
 for (const [x, y] of allTrailheads) {
-  answerOne += walkTrail(x, y);
+  const [score, rating] = walkTrail(x, y);
+  answerOne += score;
+  answerTwo += rating;
 }
 
 console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
