@@ -12,6 +12,7 @@ type Region = {
   label: string;
   plots: Array<XY>;
   perimeter: number;
+  sides: number;
 };
 
 type Map = {
@@ -34,6 +35,35 @@ const at = (map: Map, x: number, y: number): string | undefined => {
   return map.data[y][x];
 };
 
+const has = (plots: Array<XY>, [x, y]: XY) =>
+  plots.some((p) => (p[0] === x && p[1] === y));
+
+const countSides = ({ plots }: Region): number => {
+  let sides = 0;
+  // Count the corners
+  for (const [x, y] of plots) {
+    const a: XY = [x, y - 1];
+    const b: XY = [x, y + 1];
+    const c: XY = [x - 1, y];
+    const d: XY = [x + 1, y];
+    const e: XY = [x - 1, y - 1];
+    const f: XY = [x + 1, y - 1];
+    const g: XY = [x - 1, y + 1];
+    const h: XY = [x + 1, y + 1];
+    // Outside corners
+    if (!has(plots, a) && !has(plots, c)) sides++;
+    if (!has(plots, a) && !has(plots, d)) sides++;
+    if (!has(plots, b) && !has(plots, c)) sides++;
+    if (!has(plots, b) && !has(plots, d)) sides++;
+    // Inside corners
+    if (has(plots, a) && has(plots, c) && !has(plots, e)) sides++;
+    if (has(plots, a) && has(plots, d) && !has(plots, f)) sides++;
+    if (has(plots, b) && has(plots, c) && !has(plots, g)) sides++;
+    if (has(plots, b) && has(plots, d) && !has(plots, h)) sides++;
+  }
+  return sides;
+};
+
 const getRegions = (map: Map) => {
   const regions: Array<Region> = [];
   const visited = new Set<string>();
@@ -42,7 +72,7 @@ const getRegions = (map: Map) => {
       // Setup possible region
       const label = at(map, x, y);
       assert(label, "Plot is empty");
-      const region: Region = { label, plots: [], perimeter: 0 };
+      const region: Region = { label, plots: [], perimeter: 0, sides: 0 };
       // Find plots
       const walk = (x: number, y: number) => {
         if (at(map, x, y) !== label) {
@@ -62,6 +92,7 @@ const getRegions = (map: Map) => {
       };
       walk(x, y);
       if (region.plots.length) {
+        region.sides = countSides(region);
         regions.push(region);
       }
     }
@@ -72,8 +103,11 @@ const getRegions = (map: Map) => {
 const regions = getRegions(map);
 
 let answerOne = 0;
+let answerTwo = 0;
 for (const region of regions) {
   answerOne += region.plots.length * region.perimeter;
+  answerTwo += region.plots.length * region.sides;
 }
 
 console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
