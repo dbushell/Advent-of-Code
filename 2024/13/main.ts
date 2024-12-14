@@ -20,6 +20,14 @@ const validateMachine = (m: Partial<Machine>): m is Machine => {
 };
 
 const calcTokens = (m: Machine): number => {
+  // No idea what this means!
+  const d = m.A.x * m.B.y - m.A.y * m.B.x;
+  const a = m.prize.x * m.B.y - m.B.x * m.prize.y;
+  const b = m.prize.y * m.A.x - m.A.y * m.prize.x;
+  if (a % d != 0 || b % d != 0) return 0;
+  return 3 * a / d + b / d;
+
+  // Original solution
   let bTokens = 0;
   let aTokens = 0;
   for (let b = 1; b < 101; b++) {
@@ -86,4 +94,13 @@ for (const machine of allMachines) {
   answerOne += calcTokens(machine);
 }
 
+allMachines.forEach((m) => m.prize.x += 10000000000000);
+allMachines.forEach((m) => m.prize.y += 10000000000000);
+
+let answerTwo = 0;
+for (const machine of allMachines) {
+  answerTwo += calcTokens(machine);
+}
+
 console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
