@@ -7,7 +7,8 @@ const inputText = await Deno.readTextFile(
 );
 
 enum EntityType {
-  Box = "O",
+  BoxL = "[",
+  BoxR = "]",
   Empty = ".",
   Robot = "@",
   Wall = "#",
@@ -20,6 +21,8 @@ enum MoveType {
   Right = ">",
 }
 
+type BoxType = EntityType.BoxL | EntityType.BoxR;
+
 type XY = { x: number; y: number };
 type Entity<T extends EntityType = EntityType> = { position: XY; type: T };
 type Warehouse = Array<Array<Entity>>;
@@ -28,8 +31,15 @@ type Moveset = Array<MoveType>;
 /** Returns true if entity is specific type */
 const is = <T extends EntityType>(
   type: T,
-  entity?: Entity<EntityType>,
+  entity: Entity<EntityType> | undefined | null,
 ): entity is Entity<T> => (entity?.type === type);
+
+/** Returns true if entity of start or end of box */
+const isBox = (
+  entity: Entity | undefined | null,
+): entity is Entity<BoxType> => {
+  return is(EntityType.BoxL, entity) || is(EntityType.BoxR, entity);
+};
 
 /** Change places! */
 const swap = (warehouse: Warehouse, a: Entity, b: Entity) => {
@@ -99,21 +109,21 @@ const nextMove = (
     write(`Robot moved\n`);
     return;
   }
-  // Push boxes
-  if (is(EntityType.Box, neighbour)) {
-    const boxes: Array<Entity<EntityType.Box>> = [];
+  // Push boxes left or right
+  if (isBox(neighbour) && [MoveType.Left, MoveType.Right].includes(move)) {
+    const boxes: Array<Entity<BoxType>> = [];
     let n1 = neighbour;
-    while (is(EntityType.Box, n1)) {
+    while (isBox(n1)) {
       boxes.push(n1);
       const n2 = adjacent(warehouse, n1.position)[move];
       assert(n2, "Out of bounds");
       // Cannot push
       if (is(EntityType.Wall, n2)) {
-        write(`Push blocked\n`);
+        write(`Horizontal push blocked\n`);
         return;
       }
       // Multiple boxes to push
-      if (is(EntityType.Box, n2)) {
+      if (isBox(n2)) {
         n1 = n2;
         continue;
       }
@@ -121,11 +131,64 @@ const nextMove = (
       if (is(EntityType.Empty, n2)) {
         while (boxes.length) swap(warehouse, boxes.pop()!, n2);
         swap(warehouse, robot, n2);
-        write(`Pushed boxes\n`);
+        write(`Horizontal push\n`);
         return;
       }
     }
     assert(false, `Push went wrong`);
+  }
+  // Push boxes up or down
+  if (isBox(neighbour) && [MoveType.Up, MoveType.Down].includes(move)) {
+    let blocked = false;
+    const boxSet = new Set<Entity<BoxType>>();
+    // Follow movement direction to find more boxes
+    const findBox = (e1: Entity<BoxType>) => {
+      const e2 = adjacent(warehouse, e1.position)[move];
+      if (isBox(e2)) addBox(e2);
+      if (is(EntityType.Wall, e2)) {
+        blocked = true;
+      }
+    };
+    // Add both box parts and continue search
+    const addBox = (e1: Entity<BoxType>) => {
+      let e2: Entity<BoxType>;
+      const tmp = adjacent(warehouse, e1.position);
+      if (e1.type === EntityType.BoxL) {
+        e2 = tmp[MoveType.Right] as typeof e2;
+        assert(is(EntityType.BoxR, e2), "Missing right side");
+      }
+      if (e1.type === EntityType.BoxR) {
+        e2 = tmp[MoveType.Left] as typeof e2;
+        assert(is(EntityType.BoxL, e2), "Missing left side");
+      }
+      assert(isBox(e2!), "Missing box side");
+      boxSet.add(e1);
+      boxSet.add(e2);
+      findBox(e1);
+      findBox(e2);
+    };
+    addBox(neighbour);
+    if (blocked) {
+      write(`Vertical push blocked\n`);
+      return;
+    }
+    assert(boxSet.size % 2 === 0, "Uneven box parts");
+    // Move boxes one by one
+    const boxList = [...boxSet];
+    boxList.sort((
+      { position: { y: ay } },
+      { position: { y: by } },
+    ) => (move === MoveType.Up ? by - ay : ay - by));
+    while (boxList.length) {
+      const box = boxList.pop()!;
+      const tmp = adjacent(warehouse, box.position);
+      swap(warehouse, box, tmp[move]!);
+    }
+    // Finally move robot
+    const tmp = adjacent(warehouse, robot.position);
+    swap(warehouse, robot, tmp[move]!);
+    write(`Vertical push\n`);
+    return;
   }
   assert(false, `Move went wrong`);
 };
@@ -137,17 +200,29 @@ const parse = (text: string): [Warehouse, Moveset] => {
   for (const line of text.split("\n")) {
     // Build map
     if (/^#[\.#O@]+#$/.test(line)) {
-      const row: Warehouse[number] = [
-        ...line.split("").map((char, x) => ({
-          position: { x, y: warehouse.length },
+      const row: Warehouse[number] = [];
+      line.split("").map((char, x) => {
+        const e1: Entity = {
+          position: { x: x * 2, y: warehouse.length },
           type: char as EntityType,
-        })),
-      ];
+        };
+        const e2: Entity = {
+          position: { x: (x * 2) + 1, y: warehouse.length },
+          type: char as EntityType,
+        };
+        if (char === "O") {
+          e1.type = EntityType.BoxL;
+          e2.type = EntityType.BoxR;
+        }
+        if (char === "@") {
+          e2.type = EntityType.Empty;
+        }
+        row.push(e1, e2);
+      });
       if (warehouse.length) {
         assert(row.length === warehouse[0].length, "Invalid row length");
       }
       warehouse.push(row);
-
       continue;
     }
     if (/^[v^<>]+$/.test(line)) {
@@ -159,13 +234,13 @@ const parse = (text: string): [Warehouse, Moveset] => {
 };
 
 const encoder = new TextEncoder();
-const writer = Deno.stdout.writable.getWriter();
-const write = (text: string) => writer.write(encoder.encode(text));
+const write = (text: string) => Deno.stdout.writeSync(encoder.encode(text));
 
 // Colour terminal output
 const print = (warehouse: Warehouse) => {
   const ENTITIES: { [key in EntityType]: string } = {
-    [EntityType.Box]: "\x1b[36mO\x1b[0m",
+    [EntityType.BoxL]: "\x1b[36m[\x1b[0m",
+    [EntityType.BoxR]: "\x1b[36m]\x1b[0m",
     [EntityType.Empty]: "\x1b[2m.\x1b[0m",
     [EntityType.Robot]: "\x1b[33m@\x1b[0m",
     [EntityType.Wall]: "\x1b[31m#\x1b[0m",
@@ -175,12 +250,12 @@ const print = (warehouse: Warehouse) => {
     for (let x = 0; x < warehouse[0].length; x++) {
       out += ` \x1b[34m${String(x).at(-1)!}\x1b[0m`;
     }
-    return `${out}\n`;
+    return ` ${out}\n`;
   };
   let out = XAXIS();
   for (let y = 0; y < warehouse.length; y++) {
     const Y = `\x1b[34m${String(y).at(-1)!}\x1b[0m`;
-    out += `\x1b[34m${Y}\x1b[0m`;
+    out += `\x1b[34m${Y}\x1b[0m `;
     for (let x = 0; x < warehouse[y].length; x++) {
       const entity = at(warehouse, { x, y });
       out += " " + ENTITIES[entity!.type];
@@ -194,7 +269,6 @@ const print = (warehouse: Warehouse) => {
 // Show the cursor before closing
 const shutdown = () => {
   write("\x1b[?25h");
-  writer.releaseLock();
   Deno.exit();
 };
 Deno.addSignalListener("SIGTERM", shutdown);
@@ -203,7 +277,7 @@ Deno.addSignalListener("SIGINT", shutdown);
 const sumGPS = (warehouse: Warehouse): number => {
   let sum = 0;
   const boxes = warehouse.flat().filter((entity) =>
-    entity.type === EntityType.Box
+    entity.type === EntityType.BoxL
   );
   boxes.forEach((box) => {
     sum += (100 * box.position.y) + box.position.x;
@@ -214,13 +288,16 @@ const sumGPS = (warehouse: Warehouse): number => {
 {
   const [warehouse, moves] = parse(inputText);
   const robot = getRobot(warehouse);
-  const FRAMERATE = 1000 / 120;
+  const FRAMERATE = 1000 / 480;
 
   // Hide cursor
   write("\x1b[?25l");
   // Clear screen
   write("\x1b[2J\x1b[H");
+  write("Start...\n\n");
   print(warehouse);
+
+  await new Promise((resolve) => setTimeout(resolve, FRAMERATE));
 
   let count = 1;
   const total = moves.length;
@@ -238,13 +315,12 @@ const sumGPS = (warehouse: Warehouse): number => {
     write(`move: ${move}/${total}\n`);
     write(`prev: ${duration.toFixed(3)}ms\n`);
     write(`next: ${wait.toFixed(3)}ms\n`);
-
     await new Promise((resolve) => setTimeout(resolve, wait));
     count++;
   }
 
-  const answerOne = sumGPS(warehouse);
-  console.log(`Answer 1: ${answerOne}`);
+  const answerTwo = sumGPS(warehouse);
+  console.log(`Answer 2: ${answerTwo}`);
 }
 
 shutdown();
