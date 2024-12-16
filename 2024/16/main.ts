@@ -41,7 +41,7 @@ type State = {
   deers: Map<string, Reindeer>;
   deerKeys: Set<string>;
   bestScore: number;
-  finishedDeers: number;
+  finishedDeers: Array<Reindeer>;
   retiredDeers: number;
   finished: boolean;
   backlog: Array<Reindeer>;
@@ -52,6 +52,8 @@ type State = {
 const getKey = (deer: Reindeer, direction: Move) => {
   return deer.route + direction;
 };
+
+const getScore = (deer: Reindeer) => (deer.moves + (deer.turns * 1000));
 
 /** Returns true if entity is specific type */
 const is = <T extends Type>(
@@ -89,19 +91,6 @@ const atNorth = (maze: Maze, position: XY) => at(maze, northXY(position));
 const atSouth = (maze: Maze, position: XY) => at(maze, southXY(position));
 const atEast = (maze: Maze, position: XY) => at(maze, eastXY(position));
 const atWest = (maze: Maze, position: XY) => at(maze, westXY(position));
-
-const atDirection = (maze: Maze, position: XY, direction: Move) => {
-  switch (direction) {
-    case Move.North:
-      return atNorth(maze, position);
-    case Move.South:
-      return atSouth(maze, position);
-    case Move.East:
-      return atEast(maze, position);
-    case Move.West:
-      return atWest(maze, position);
-  }
-};
 
 /** Return entities up, down, left, and right */
 const atAdjacent = (
@@ -171,7 +160,7 @@ const tick = (state: State) => {
 
   // Iterate over deers (do not modify deers inside loop!)
   for (const [, deer] of deers) {
-    const score = deer.moves + (deer.turns * 1000);
+    const score = getScore(deer);
 
     // Update counts
     if (deer.finished) {
@@ -179,7 +168,7 @@ const tick = (state: State) => {
         state.bestScore = score;
         state.winning = deer;
       }
-      state.finishedDeers++;
+      state.finishedDeers.push(deer);
       deers.delete(deer.key);
       continue;
     }
@@ -226,22 +215,6 @@ const tick = (state: State) => {
       }
     }
 
-    // Detect loop
-    // if (deer.history.length > 4) {
-    //   const [a, b] = deer.history.slice(-2);
-    //   for (let i = 0; i < deer.history.length - 2; i++) {
-    //     if (
-    //       deer.history[i].x === a.x &&
-    //       deer.history[i].y === a.y &&
-    //       deer.history[i + 1].x === b.x &&
-    //       deer.history[i + 1].y === b.y
-    //     ) {
-    //       deer.retired = true;
-    //       continue;
-    //     }
-    //   }
-    // }
-
     const { direction, position } = deer;
     const adjacent = atAdjacent(maze, position);
     const forward = adjacent[direction];
@@ -250,6 +223,7 @@ const tick = (state: State) => {
     // Move deer to end
     if (has(maze, forward, Type.End)) {
       deer.position = getXY(position, direction);
+      deer.history.push(deer.position);
       deer.route += direction;
       deer.finished = true;
       deer.moves++;
@@ -308,10 +282,9 @@ const tick = (state: State) => {
 
   // Move deers
   for (const [deer, direction] of moveMap) {
-    const xy = getXY(deer.position, direction);
-    deer.position = xy;
+    deer.position = getXY(deer.position, direction);
+    deer.history.push(deer.position);
     deer.route += direction;
-    deer.history.push(xy);
     deer.moves++;
   }
 
@@ -365,7 +338,6 @@ const print = ({ maze, deers, winning }: State) => {
   }
   out += XAXIS();
   write(out + `\n`);
-  write(winning.history.length + "\n");
 };
 
 {
@@ -389,7 +361,7 @@ const print = ({ maze, deers, winning }: State) => {
     deers,
     deerKeys: new Set([deer.key]),
     bestScore: Infinity,
-    finishedDeers: 0,
+    finishedDeers: [],
     retiredDeers: 0,
     finished: false,
     backlog: [],
@@ -441,7 +413,7 @@ const print = ({ maze, deers, winning }: State) => {
     write(`Active: ${deers.size}\n`);
     write(`Backlog: ${state.backlog.length}\n`);
     write(`Retired: ${state.retiredDeers}\n`);
-    write(`Finished: ${state.finishedDeers}\n`);
+    write(`Finished: ${state.finishedDeers.length}\n`);
     write(`Total: ${state.deerKeys.size}\n`);
     write(`Best score: ${state.bestScore}\n`);
     setTimeout(frame, Math.max(0, FRAMERATE - duration));
@@ -449,9 +421,23 @@ const print = ({ maze, deers, winning }: State) => {
   frame();
   await working.promise;
 
+  // Temporary binary map to merge best routes
+  const best: Array<Array<number>> = [];
+  for (let y = 0; y < maze.length; y++) {
+    best[y] = [];
+    for (let x = 0; x < maze[y].length; x++) {
+      best[y][x] = 0;
+    }
+  }
+  // Plot best routes on temporary map
+  state.finishedDeers.forEach((deer) => {
+    if (getScore(deer) !== state.bestScore) return;
+    for (const { x, y } of deer.history) best[y][x] = 1;
+  });
+  // Count unique points
+  const answerTwo = best.flat().reduce((a, v) => (a + v), 0);
+
   write("\n");
-  write(`Retired: ${state.retiredDeers}\n`);
-  write(`Finished: ${state.finishedDeers}\n`);
-  write(`Total: ${state.deerKeys.size}\n`);
-  write(`Best score: ${state.bestScore}\n`);
+  write(`Answer 1: ${state.bestScore}\n`);
+  write(`Answer 2: ${answerTwo}\n`);
 }
