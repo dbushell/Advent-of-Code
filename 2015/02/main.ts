@@ -23,5 +23,5 @@ for (const line of inputText.split("\n")) {
   answerTwo += L * W * H;
 }
 
-console.log(`Answer one: ${answerOne}`);
-console.log(`Answer two: ${answerTwo}`);
+console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
