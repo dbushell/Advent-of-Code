@@ -37,6 +37,7 @@ type State = {
   history: Array<Instruction>;
   controller: AbortController;
   clockRate: number;
+  target?: boolean;
 };
 
 // Codes to help debug
@@ -157,7 +158,8 @@ const execCDV = (state: State, instruction: Instruction) => {
 
 const execBXL = (state: State, instruction: Instruction) => {
   const operand = getOperand(state, instruction);
-  const result = state.B.value ^ operand;
+  // const result = state.B.value ^ operand;
+  const result = Number(BigInt(state.B.value) ^ BigInt(operand));
   state.B.value = result;
   state.pointer += 2;
 };
@@ -181,7 +183,8 @@ const execJNZ = (state: State, instruction: Instruction) => {
 
 const execBXC = (state: State, instruction: Instruction) => {
   const _operand = getOperand(state, instruction);
-  const result = state.B.value ^ state.C.value;
+  // const result = state.B.value ^ state.C.value;
+  const result = Number(BigInt(state.B.value) ^ BigInt(state.C.value));
   state.B.value = result;
   state.pointer += 2;
 };
@@ -199,18 +202,20 @@ const exec = (state: State) => {
   const instruction = state.program[index];
   const { opcode, operand } = instruction;
   state.history.push({ opcode, operand });
-  write("\x1b[2J\x1b[H\n");
-  write(color(`A: ${state.A.value}\n`, Color.Yellow));
-  write(color(`B: ${state.B.value}\n`, Color.Green));
-  write(color(`C: ${state.C.value}\n`, Color.Cyan));
-  {
-    const { opcode, operand } = state.history.at(-2) ?? {};
-    const code = `${opcode ?? -1}${opcode ? ` ${codes[opcode]}` : ``}`;
-    write(color(`Prev: [${code}, ${operand ?? -1}]\n`, Color.Blue));
+  if (state.clockRate) {
+    write("\x1b[2J\x1b[H\n");
+    write(color(`A: ${state.A.value}\n`, Color.Yellow));
+    write(color(`B: ${state.B.value}\n`, Color.Green));
+    write(color(`C: ${state.C.value}\n`, Color.Cyan));
+    {
+      const { opcode, operand } = state.history.at(-2) ?? {};
+      const code = `${opcode ?? -1}${opcode ? ` ${codes[opcode]}` : ``}`;
+      write(color(`Prev: [${code}, ${operand ?? -1}]\n`, Color.Blue));
+    }
+    const code = `${opcode} ${codes[opcode]}`;
+    write(color(`Next: [${code}, ${operand}]\n`, Color.Purple, true));
+    write("\n");
   }
-  const code = `${opcode} ${codes[opcode]}`;
-  write(color(`Next: [${code}, ${operand}]\n`, Color.Purple, true));
-  write("\n");
   switch (opcode) {
     case Opcode.ADV:
       execADV(state, instruction);
@@ -244,25 +249,32 @@ const run = async (state: State): Promise<State["output"]> => {
   while ((state.pointer / 2) < state.program.length) {
     if (state.controller.signal.aborted) break;
     assert(state.pointer % 2 === 0, "Pointer uneven");
-    await new Promise((resolve) => setTimeout(resolve, state.clockRate));
+    if (state.clockRate) {
+      await new Promise((resolve) => setTimeout(resolve, state.clockRate));
+    }
     exec(state);
+    if (state.target) {
+      if (state.output.length > (state.program.length * 2)) {
+        return [];
+      }
+      if (state.output.length && (state.output.length % 2) === 0) {
+        const [opcode, operand] = state.output.slice(-2);
+        const instruction = state.program.at((state.output.length / 2) - 1);
+        if (opcode !== instruction?.opcode) return [];
+        if (operand !== instruction?.operand) return [];
+      }
+    }
   }
   return state.output;
 };
 
 {
   const state: State = parse(inputText);
-  state.clockRate = 1000 / 30;
+  state.clockRate = 1000 / 120;
   const shutdown = () => {
     state.controller.abort();
     // Show the cursor
     write("\x1b[?25h");
-    console.log(state);
-    console.log(
-      ...state.history.map((
-        { opcode, operand },
-      ) => [opcode, codes[opcode], operand]),
-    );
   };
   Deno.addSignalListener("SIGTERM", shutdown);
   Deno.addSignalListener("SIGINT", shutdown);
@@ -275,5 +287,71 @@ const run = async (state: State): Promise<State["output"]> => {
     return [];
   });
   shutdown();
-  console.log(`\nAnswer 1: ${output.join(",")}`);
+  write(color(`Answer 1: ${output.join(",")}\n`, Color.Green, true));
 }
+
+{
+  const state: State = parse(inputText);
+  const target = state.program.map(({ opcode, operand }) => [opcode, operand])
+    .flat().join(",");
+
+  // Correct answers found via pattern
+  // 164541026365117
+  // 164541017976765
+  // 164541017976509
+  let answerTwo = 0;
+  for (let i = 164541026365117; i > 0; i -= 256) {
+    const state: State = parse(inputText);
+    state.target = true;
+    state.A.value = i;
+    await run(state);
+    const output = state.output.join(",");
+    if (output === target) {
+      if ((answerTwo - i) == 256) {
+        answerTwo = i;
+        break;
+      }
+      answerTwo = i;
+    }
+  }
+
+  write(
+    color(
+      `\nAnswer 2: ${answerTwo}\n`,
+      answerTwo > 0 ? Color.Green : Color.Red,
+      true,
+    ),
+  );
+}
+
+// Find pattern for answer two
+// {
+// let i = 23948989;
+// let i = 164541026365117;
+// let j = 0;
+// while (i) {
+//   i -= (j++ % 2 === 0) ? 8388352 : 256;
+//   const state: State = parse(inputText);
+//   state.target = true;
+//   state.A.value = i;
+//   await run(state);
+//   const output = state.output.join(",");
+//   if (output === target) {
+//     answerTwo = i;
+//     console.log(i, `\t${output}`);
+//   }
+// }
+// for (let i = 10000000; i < 10000000000; i++) {
+//   const state: State = parse(inputText);
+//   state.target = true;
+//   state.A.value = i;
+//   await run(state);
+//   const output = state.output.join(",");
+//   if (output.length >= 16) {
+//     console.log(i, `\t${output}`);
+//   }
+//   if (output === target) {
+//     break;
+//   }
+// }
+// }
