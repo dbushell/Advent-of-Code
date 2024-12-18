@@ -14,14 +14,6 @@ enum Gate {
   RSHIFT = "RSHIFT",
 }
 
-// const gates: Readonly<{ [key in Gate]: string }> = {
-//   [Gate.AND]: "AND",
-//   [Gate.OR]: "OR",
-//   [Gate.NOT]: "NOT",
-//   [Gate.LSHIFT]: "LSHIFT",
-//   [Gate.RSHIFT]: "RSHIFT",
-// };
-
 type Wire = {
   id: string;
   deps: Array<Wire>;
@@ -29,82 +21,87 @@ type Wire = {
   value?: number;
 };
 
-{
-  const map = new Map<string, Wire>();
-  for (const line of inputText.split("\n")) {
-    const match = line.match(/^([\w\s]+)-> ([a-z]+)$/);
-    if (!match) continue;
-    const parts = match[1].split(" ").filter((s) => s.trim().length);
-    assert(parts.length, "Missing input");
-    // Ensure output wire
-    const out = map.get(match[2]);
-    if (out) {
-      out.parts = parts;
-    } else {
-      map.set(match[2], {
-        id: match[2],
-        deps: [],
-        parts,
-      });
+const map = new Map<string, Wire>();
+for (const line of inputText.split("\n")) {
+  const match = line.match(/^([\w\s]+)-> ([a-z]+)$/);
+  if (!match) continue;
+  const parts = match[1].split(" ").filter((s) => s.trim().length);
+  assert(parts.length, "Missing input");
+  // Ensure output wire
+  const out = map.get(match[2]);
+  if (out) {
+    out.parts = parts;
+  } else {
+    map.set(match[2], {
+      id: match[2],
+      deps: [],
+      parts,
+    });
+  }
+  // Ensure input wires
+  for (const part of parts) {
+    if (!/[a-z]+/.test(part)) continue;
+    if (map.has(part)) continue;
+    map.set(part, {
+      id: part,
+      deps: [],
+      parts: [],
+    });
+  }
+}
+map.forEach((wire) => {
+  // Link dependencies
+  wire.deps = [
+    ...map.values().filter((w) => wire.parts.includes(w.id)),
+  ];
+  // Parse integers
+  wire.parts = wire.parts.map((part) => {
+    if (typeof part === "string" && /\d+/.test(part)) {
+      return Number.parseInt(part);
     }
-    // Ensure input wires
-    for (const part of parts) {
-      if (!/[a-z]+/.test(part)) continue;
-      if (map.has(part)) continue;
-      map.set(part, {
-        id: part,
-        deps: [],
-        parts: [],
-      });
+    return part;
+  });
+});
+
+// Return numeric value from signal
+const getValue = (id: number | string): number => {
+  if (typeof id === "number") return id;
+  const value = map.get(id)?.value;
+  assert(value !== undefined, `Value for "${id}" not calculated`);
+  return value;
+};
+
+// Get flat list of nested dependencies
+const getDependencies = (wire: Wire, dependencies?: Set<Wire>): Set<Wire> => {
+  dependencies ??= new Set<Wire>();
+  for (const dependency of wire.deps) {
+    if (dependencies.has(dependency)) continue;
+    dependencies.add(dependency);
+    if (!dependency.deps.length) continue;
+    for (const d of getDependencies(dependency, dependencies)) {
+      dependencies.add(d);
     }
   }
-  map.forEach((wire) => {
-    // Link dependencies
-    wire.deps = [
-      ...map.values().filter((w) => wire.parts.includes(w.id)),
-    ];
-    // Parse integers
-    wire.parts = wire.parts.map((part) => {
-      if (typeof part === "string" && /\d+/.test(part)) {
-        return Number.parseInt(part);
-      }
-      return part;
-    });
-  });
+  return dependencies;
+};
 
-  // Get flat list of nested dependencies
-  const getDeps = (wire: Wire, deps?: Set<Wire>): Set<Wire> => {
-    deps ??= new Set<Wire>();
-    for (const dep of wire.deps) {
-      if (deps.has(dep)) continue;
-      deps.add(dep);
-      if (!dep.deps.length) continue;
-      for (const d of getDeps(dep, deps)) deps.add(d);
-    }
-    return deps;
-  };
+const sortWires = (a: Wire, b: Wire): number => {
+  const ad = getDependencies(a);
+  const bd = getDependencies(b);
+  assert(!(ad.has(b) && bd.has(a)), "Circular dependency detected!");
+  if (ad.size === 0 && bd.size > 0) return -1;
+  if (bd.size === 0 && ad.size > 0) return 1;
+  if (bd.has(a)) return -1;
+  if (ad.has(b)) return 1;
+  return ad.size - bd.size;
+};
 
-  // Order wires by dependency
-  const wires = [...map.values()];
-  wires.sort((a, b) => {
-    const ad = getDeps(a);
-    const bd = getDeps(b);
-    assert(!(ad.has(b) && bd.has(a)), "Circular dependency detected!");
-    if (ad.size === 0 && bd.size > 0) return -1;
-    if (bd.size === 0 && ad.size > 0) return 1;
-    if (bd.has(a)) return -1;
-    if (ad.has(b)) return 1;
-    return ad.size - bd.size;
-  });
+// Order wires by dependency
+const wires = [...map.values()];
+wires.sort(sortWires);
 
-  const getValue = (value: number | string): number => {
-    if (typeof value === "number") return value;
-    const findValue = map.get(value)?.value;
-    assert(findValue !== undefined, `Value for "${value}" not calculated`);
-    return findValue;
-  };
-
-  // Compute values
+// Compute values
+const computeValues = () => {
   for (const wire of wires) {
     if (wire.parts.length === 1) {
       const value = getValue(wire.parts[0]);
@@ -134,11 +131,29 @@ type Wire = {
     }
     assert(false, "Unknown instruction");
   }
+};
 
-  for (const wire of wires) {
-    assert(wire.value !== undefined, "Missing wire value");
-    assert(wire.value >= 0 && wire.value <= 65535, "Invalid wire value");
-  }
+computeValues();
+const answerOne = map.get("a")?.value;
+assert(typeof answerOne === "number", "Failed part 1!");
+console.log(`Answer 1: ${answerOne}`);
 
-  console.log(`Answer 1: ${map.get("a")?.value}`);
+/*************
+ * PART TWO! *
+ *************/
+
+wires.forEach((wire) => {
+  wire.value = undefined;
+  if (wire.id === "b") wire.parts = [answerOne];
+});
+wires.sort(sortWires);
+computeValues();
+
+for (const wire of wires) {
+  assert(wire.value !== undefined, "Missing wire value");
+  assert(wire.value >= 0 && wire.value <= 65535, "Invalid wire value");
 }
+
+const answerTwo = map.get("a")?.value;
+assert(typeof answerTwo === "number", "Failed part 2!");
+console.log(`Answer 2: ${answerTwo}`);
