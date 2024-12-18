@@ -6,17 +6,17 @@ const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
 );
 
-let maxLength = 0;
+let midLength = 0;
 let minLength = 0;
+let maxLength = 0;
 
-const unescape = (value: string): string => {
+const decode = (value: string): string => {
   let out = "";
   for (let i = 0; i < value.length; i++) {
     const char = value[i];
     const peek1 = value[i + 1];
     const peek2 = value[i + 2];
     const peek3 = value[i + 3];
-    // Skip wrapping quotes
     if (i === 0 && char === '"') continue;
     if (i === value.length - 1 && char === '"') continue;
     if (char === "\\") {
@@ -38,14 +38,34 @@ const unescape = (value: string): string => {
   return out;
 };
 
+const encode = (value: string): string => {
+  let out = "";
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    if (char === '"') {
+      out += '\\"';
+      continue;
+    }
+    if (char === "\\") {
+      out += "\\\\";
+      continue;
+    }
+    out += char;
+  }
+  return `"${out}"`;
+};
+
 for (let line of inputText.split("\n")) {
   line = line.trim();
   if (line.length === 0) continue;
-  maxLength += line.length;
+  midLength += line.length;
   assert(/^".+"$/.test(line), "Invalid line input");
-  minLength += unescape(line).length;
+  minLength += decode(line).length;
+  maxLength += encode(line).length;
 }
 
-const answerOne = maxLength - minLength;
+const answerOne = midLength - minLength;
+const answerTwo = maxLength - midLength;
 
 console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
