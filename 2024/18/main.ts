@@ -74,7 +74,7 @@ const parse = (input: string, state?: State): State => {
   // Size memory for test and real input
   const isTest = input.length < 1000;
   const length = isTest ? 7 : 71;
-  const maxBytes = isTest ? 12 : 1024; //Infinity;
+  const maxBytes = isTest ? 12 : Infinity;
   state ??= {
     memory: Array.from(
       { length },
@@ -148,11 +148,9 @@ const tick = (state: State) => {
     if (!hasXY(route, byte)) continue;
     state.routes.delete(key);
     const size = state.memory.length - 1;
-    const newRoute = [
-      { x: 0, y: 0 },
-      ...findRoute(state, { x: 0, y: 0 }, { x: size, y: size }),
-      { x: size, y: size },
-    ];
+    const midRoute = findRoute(state, { x: 0, y: 0 }, { x: size, y: size });
+    if (midRoute.length === 0) continue;
+    const newRoute = [{ x: 0, y: 0 }, ...midRoute, { x: size, y: size }];
     const newKey = getKey(newRoute);
     // assert(state.routeKeys.has(newKey), "Path already explored");
     state.routeKeys.add(newKey);
@@ -167,7 +165,7 @@ const tick = (state: State) => {
     screen.showCursor();
   };
   state.framerate = 1000 / 120;
-  // state.framerate = 0;
+  state.framerate = 1;
   Deno.addSignalListener("SIGTERM", shutdown);
   Deno.addSignalListener("SIGINT", shutdown);
 
@@ -179,15 +177,15 @@ const tick = (state: State) => {
 
   {
     const size = state.memory.length - 1;
-    const route = [
-      { x: 0, y: 0 },
-      ...findRoute(state, { x: 0, y: 0 }, { x: size, y: size }),
-      { x: size, y: size },
-    ];
+    const midRoute = findRoute(state, { x: 0, y: 0 }, { x: size, y: size });
+    const route = [{ x: 0, y: 0 }, ...midRoute, { x: size, y: size }];
     const key = getKey(route);
     state.routeKeys.add(key);
     state.routes.set(key, route);
   }
+
+  let answerOne = 0;
+  let answerTwo = "";
 
   // Game loop
   while (state.bytes.length > 0) {
@@ -206,6 +204,16 @@ const tick = (state: State) => {
       b,
     ) => (b.length - a.length));
     assert(routes, "No routes");
+
+    if (state.bytesFallen.length === 1024) {
+      answerOne = (routes.at(-1)?.length ?? 0) - 1;
+    }
+    if (routes.length === 0) {
+      answerTwo = `${state.bytesFallen.at(-1)!.x},${
+        state.bytesFallen.at(-1)!.y
+      }`;
+      break;
+    }
 
     // Clear old painted routes
     for (let y = 0; y < state.memory.length; y++) {
@@ -244,13 +252,8 @@ const tick = (state: State) => {
     );
   }
 
-  const routes = [...state.routes.values()].sort((
-    a,
-    b,
-  ) => (b.length - a.length));
-
-  const answerOne = (routes.at(-1)?.length ?? 0) - 1;
-  write(`\nAnswer 1: ${answerOne}\n`);
+  write(`Answer 1: ${answerOne}\n`);
+  write(`Answer 2: ${answerTwo}\n`);
 
   shutdown();
 }
