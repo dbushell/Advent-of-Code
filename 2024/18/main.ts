@@ -101,7 +101,6 @@ const parse = (input: string, state?: State): State => {
 
 const findRoute = (state: State, start: XY, end: XY): Array<XY> => {
   const length = state.memory.length;
-
   const visited: Array<Array<XY | null>> = Array.from(
     { length },
     () => Array(length).fill(null),
@@ -112,16 +111,17 @@ const findRoute = (state: State, start: XY, end: XY): Array<XY> => {
     const xy = queue.shift()!;
     // Path found
     if (xy.x === end.x && xy.y === end.y) {
-      const route: Array<XY> = [];
+      const route: Array<XY> = [end];
       let walk: XY | null = end;
       while (true) {
         walk = visited[walk.y][walk.x];
         assert(walk, "Path failed");
-        if (walk.x === start.x && walk.y === start.y) break;
         route.push(walk);
+        if (walk.x === start.x && walk.y === start.y) break;
       }
       return route.reverse();
     }
+
     // Continue search
     for (const { x, y } of adjacentXY(xy)) {
       if (!isValid(state, { x, y })) continue;
@@ -148,9 +148,8 @@ const tick = (state: State) => {
     if (!hasXY(route, byte)) continue;
     state.routes.delete(key);
     const size = state.memory.length - 1;
-    const midRoute = findRoute(state, { x: 0, y: 0 }, { x: size, y: size });
-    if (midRoute.length === 0) continue;
-    const newRoute = [{ x: 0, y: 0 }, ...midRoute, { x: size, y: size }];
+    const newRoute = findRoute(state, { x: 0, y: 0 }, { x: size, y: size });
+    if (newRoute.length === 0) continue;
     const newKey = getKey(newRoute);
     // assert(state.routeKeys.has(newKey), "Path already explored");
     state.routeKeys.add(newKey);
@@ -177,8 +176,7 @@ const tick = (state: State) => {
 
   {
     const size = state.memory.length - 1;
-    const midRoute = findRoute(state, { x: 0, y: 0 }, { x: size, y: size });
-    const route = [{ x: 0, y: 0 }, ...midRoute, { x: size, y: size }];
+    const route = findRoute(state, { x: 0, y: 0 }, { x: size, y: size });
     const key = getKey(route);
     state.routeKeys.add(key);
     state.routes.set(key, route);
