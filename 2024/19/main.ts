@@ -45,15 +45,52 @@ const parse = (input: string, state?: State): State => {
     return false;
   };
 
-  // Match designs
   const matches = new Map<string, boolean>();
   for (const design of state.designs) {
     matches.set(design, match(design));
   }
 
-  // Part 1
-  const answerOne = matches.values().toArray().filter((v) => v).length;
   console.log(`Patterns: ${state.patterns.size}`);
   console.log(`Designs: ${state.designs.length}`);
-  console.log(`Answer 1: ${answerOne}`);
+
+  const answerOne = matches.values().toArray().filter((v) => v).length;
+  console.log(`\nAnswer 1: ${answerOne}\n`);
+}
+
+{
+  const state = parse(inputText);
+  const cache = new Map<string, number>();
+
+  const match = (
+    design: string,
+    part: string,
+    parts: Array<string> = [],
+  ): number => {
+    let count = 0;
+    if (state.patterns.has(part)) {
+      if ([part, ...parts].join("") === design) count++;
+    }
+    // Work backwards
+    for (let i = part.length - 1; i > 0; i--) {
+      const end = part.substring(i);
+      if (!state.patterns.has(end)) {
+        continue;
+      }
+      const start = part.substring(0, i);
+      if (cache.has(start)) {
+        count += cache.get(start)!;
+        continue;
+      }
+      const subCount = match(design, start, [end, ...parts]);
+      cache.set(start, subCount);
+      count += subCount;
+    }
+    return count;
+  };
+
+  let answerTwo = 0;
+  for (const design of state.designs) {
+    answerTwo += match(design, design);
+  }
+  console.log(`Answer 2: ${answerTwo}\n`);
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read
 
 const inputText = await Deno.readTextFile(
-  new URL("input.txt", import.meta.url),
+  new URL("test1.txt", import.meta.url),
 );
 
 const next = (input: string): string => {
