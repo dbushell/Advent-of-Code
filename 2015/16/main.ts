@@ -47,13 +47,38 @@ const target = {
 };
 
 // Part 1
-const matchAunts = allAunts.filter((sue) => {
-  for (const [k, v] of Object.entries(sue)) {
-    if (k === "number") continue;
-    if (target[k as keyof typeof target] !== v) return false;
-  }
-  return true;
-});
-assert(matchAunts.length, "Failed to find Sue!");
-const answerOne = matchAunts[0].number;
-console.log(`Answer 1: ${answerOne}`);
+{
+  const matchAunts = allAunts.filter((sue) => {
+    for (const [k, v] of Object.entries(sue)) {
+      if (k === "number") continue;
+      if (target[k as keyof typeof target] !== v) return false;
+    }
+    return true;
+  });
+  assert(matchAunts.length === 1, "Failed to find Sue!");
+  const answerOne = matchAunts[0].number;
+  console.log(`Answer 1: ${answerOne}`);
+}
+
+// Part 2
+{
+  const matchAunts = allAunts.filter((sue) => {
+    for (const [k, v] of Object.entries(sue)) {
+      if (k === "number") continue;
+      const tv = target[k as keyof typeof target];
+      if (["cats", "trees"].includes(k)) {
+        if (v <= tv) return false;
+        continue;
+      }
+      if (["pomeranians", "goldfish"].includes(k)) {
+        if (v >= tv) return false;
+        continue;
+      }
+      if (tv !== v) return false;
+    }
+    return true;
+  });
+  assert(matchAunts.length === 1, "Failed to find Sue!");
+  const answerTwo = matchAunts[0].number;
+  console.log(`Answer 2: ${answerTwo}`);
+}
