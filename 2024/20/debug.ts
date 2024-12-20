@@ -1,6 +1,6 @@
 import { assert } from "jsr:@std/assert/assert";
 import { getXY, hasXY, sameXY } from "./helpers.ts";
-import { Cell, type State } from "./types.ts";
+import { Cell, type State, type XY } from "./types.ts";
 
 export enum Color {
   Black = 30,
@@ -38,7 +38,7 @@ export const print = (state: State): string => {
     xAxis += ` ${dim(String(x).at(-1)!)}`;
   }
   let out = `${xAxis}\n`;
-  const route = state.routes.get(state.drawRoute)!;
+  const route = state.routes.get("draw") || state.routes.get(state.drawRoute)!;
   assert(route, "No route to draw");
   const ps = hasXY(route, state.current);
   for (let y = 0; y < state.grid.length; y++) {
@@ -64,7 +64,7 @@ export const print = (state: State): string => {
         if (has < ps) {
           char = color("⁕", Color.Cyan);
         } else {
-          char = color("*", Color.Blue);
+          char = color("*", Color.Cyan);
         }
       }
       // Draw current

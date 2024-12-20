@@ -2,7 +2,7 @@
 
 import { assert } from "jsr:@std/assert/assert";
 import { dim, print, screen, write } from "./debug.ts";
-import { adjacentXY, setXY } from "./helpers.ts";
+import { adjacentXY, hasXY, setXY, surroundXY } from "./helpers.ts";
 import { isXY } from "./helpers.ts";
 import { getXY } from "./helpers.ts";
 import { Color, color } from "./debug.ts";
@@ -113,10 +113,10 @@ const parse = (input: string, state?: State): State => {
 
   const initialRoute = state.routes.values().toArray().at(0)!;
   const initialRouteKey = getRouteKey(initialRoute);
-  state.routeKeys.add(initialRouteKey);
   state.drawRoute = initialRouteKey;
 
   state.framerate = initialRoute.length > 100 ? 1 : 1000 / 30;
+  state.framerate = 2;
 
   // Print initial state
   screen.hideCursor();
@@ -127,31 +127,58 @@ const parse = (input: string, state?: State): State => {
   }
 
   const buckets: Array<number> = new Array(initialRoute.length).fill(0);
-
   const THRESHOLD = initialRoute.length > 100 ? 100 : 50;
 
-  for (let p1 = 0; p1 < initialRoute.length; p1++) {
+  for (let ps = 0; ps < initialRoute.length; ps++) {
     if (state.controller.signal.aborted) break;
     performance.mark("start");
 
-    for (let p2 = 2; p2 < initialRoute.length; p2++) {
-      const distance = Math.abs(initialRoute[p1].x - initialRoute[p2].x) +
-        Math.abs(initialRoute[p1].y - initialRoute[p2].y);
-      if (distance > 20) continue;
-      const distanceOnPath = p2 - p1;
-      const saving = distanceOnPath - distance;
-      if (saving < THRESHOLD) continue;
-      buckets[initialRoute.length - saving]++;
-    }
-
     let out = "";
+
+    // Position now
+    state.current = initialRoute[ps];
+    assert(isXY(state, state.current));
+
+    const surround = surroundXY(state.current, 20);
+
+    const walls = surround.filter((xy) => {
+      if (!isXY(state, xy)) return false;
+      return getXY(state, xy) === Cell.Wall;
+    });
+
+    walls.forEach((xy) => setXY(state, xy, Cell.Empty));
+
+    let shortestRoute = initialRoute;
+    for (const xy of surround) {
+      if (state.controller.signal.aborted) break;
+      const index = hasXY(initialRoute, xy);
+      assert(index !== ps, "Same place");
+      if (index <= ps) continue;
+      const route = findRoute(state, initialRoute[ps], xy);
+      const fullRoute = [
+        ...initialRoute.slice(0, ps),
+        ...route,
+        ...initialRoute.slice(index + 1),
+      ];
+      const saving = initialRoute.length - fullRoute.length;
+      if (saving < THRESHOLD) continue;
+      buckets[fullRoute.length]++;
+      if (state.framerate > 1) {
+        if (fullRoute.length < shortestRoute.length) {
+          shortestRoute = fullRoute;
+        }
+      }
+    }
+    state.routes.set("draw", shortestRoute);
+
     if (state.framerate > 1) {
       out += print(state);
     }
+    walls.forEach((xy) => setXY(state, xy, Cell.Wall));
 
     performance.mark("end");
     const { duration } = performance.measure("frame", "start", "end");
-    out += color(`Pico:\t${p1}ps\n`, Color.Yellow);
+    out += color(`Pico:\t${ps}ps\n`, Color.Yellow);
     out += dim(`Frame:\t${duration.toFixed(2)}ms\n`);
 
     screen.clear();
