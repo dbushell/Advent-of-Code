@@ -3,7 +3,7 @@
 import { assert } from "jsr:@std/assert/assert";
 
 const inputText = await Deno.readTextFile(
-  new URL("test1.txt", import.meta.url),
+  new URL("input.txt", import.meta.url),
 );
 
 type Numeric<T> = { [K in keyof T]: T[K] extends number ? K : never }[keyof T];
@@ -30,13 +30,14 @@ const getIngredient = (name: string): Ingredient => {
   return ingredient;
 };
 
-const scoreRecipe = (recipe: Recipe): number => {
+const scoreRecipe = (recipe: Recipe): [number, number] => {
   const props: Array<Numeric<Ingredient>> = [
     "capacity",
     "durability",
     "flavor",
     "texture",
   ];
+
   const scores: Array<number> = [];
   for (const prop of props) {
     scores.push(
@@ -46,7 +47,14 @@ const scoreRecipe = (recipe: Recipe): number => {
         .reduce((score, amount) => score + amount, 0),
     );
   }
-  return scores.reduce((c, v) => (c * v), 1);
+  const total = scores.reduce((c, v) => Math.max(0, c * v), 1);
+
+  const calories = recipe.map((
+    { ingredient, teaspoons },
+  ) => (ingredient["calories"] * teaspoons))
+    .reduce((score, amount) => score + amount, 0);
+
+  return [total, calories];
 };
 
 for (const line of inputText.split("\n")) {
@@ -66,12 +74,41 @@ for (const line of inputText.split("\n")) {
   });
 }
 
-const example: Recipe = [{
-  ingredient: getIngredient("Butterscotch"),
-  teaspoons: 44,
-}, {
-  ingredient: getIngredient("Cinnamon"),
-  teaspoons: 56,
-}];
+const names = ingredients.keys().toArray();
 
-console.log(scoreRecipe(example));
+let answerOne = 0;
+let answerTwo = 0;
+
+for (let a = 96; a >= 1; a--) {
+  for (let b = 1; b <= 100 - a - 2; b++) {
+    for (let c = 1; c <= 100 - a - b - 1; c++) {
+      const d = 100 - a - b - c;
+      const recipe: Recipe = [{
+        ingredient: getIngredient(names[0]),
+        teaspoons: a,
+      }];
+      recipe.push({
+        ingredient: getIngredient(names[1]),
+        teaspoons: b,
+      });
+      recipe.push({
+        ingredient: getIngredient(names[2]),
+        teaspoons: c,
+      });
+      recipe.push({
+        ingredient: getIngredient(names[3]),
+        teaspoons: d,
+      });
+      const [score, calories] = scoreRecipe(recipe);
+      if (score > answerOne) {
+        answerOne = score;
+      }
+      if (calories === 500 && score > answerTwo) {
+        answerTwo = score;
+      }
+    }
+  }
+}
+
+console.log(`Answer 1: ${answerOne}`);
+console.log(`Answer 2: ${answerTwo}`);
