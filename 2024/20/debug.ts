@@ -54,12 +54,7 @@ export const print = (state: State): string => {
       else if (cell === Cell.Cheat) {
         char = color(`□`, Color.Red);
       } // Draw start
-      else if (sameXY({ x, y }, state.start)) {
-        char = color("☆", Color.Green);
-      } // Draw end
-      else if (sameXY({ x, y }, state.end)) {
-        char = color("★", Color.Green);
-      } // Draw empty
+      // Draw empty
       else {
         char = dim(Cell.Empty);
       }
@@ -75,6 +70,14 @@ export const print = (state: State): string => {
       // Draw current
       if (sameXY({ x, y }, state.current)) {
         char = color("✱", Color.Yellow);
+      }
+      // Draw start
+      if (sameXY({ x, y }, state.start)) {
+        char = color("☆", Color.Green);
+      }
+      // Draw end
+      if (sameXY({ x, y }, state.end)) {
+        char = color("★", Color.Green);
       }
       out += ` ${char}`;
     }

@@ -127,12 +127,9 @@ const parse = (input: string, state?: State): State => {
     await new Promise((resolve) => setTimeout(resolve, state.framerate));
   }
 
-  const reset = new Map<XY, Cell>();
-
   for (let ps = 0; ps < initialRoute.length; ps++) {
     if (state.controller.signal.aborted) break;
     performance.mark("start");
-    reset.clear();
     let out = "";
 
     state.drawRoute = initialRouteKey;
@@ -167,13 +164,8 @@ const parse = (input: string, state?: State): State => {
       setXY(state, xy, Cell.Wall);
     }
 
-    screen.clear();
     if (state.framerate > 1) {
       out += print(state);
-    }
-
-    for (const [xy, value] of reset) {
-      setXY(state, xy, value);
     }
 
     performance.mark("end");
@@ -184,6 +176,8 @@ const parse = (input: string, state?: State): State => {
     out += color(`Max:\t${initialRoute.length}\n`, Color.Red);
     out += color(`Min:\t${bestRoute.length}\n`, Color.Cyan);
     out += dim(`Frame:\t${duration.toFixed(2)}ms\n`);
+
+    screen.clear();
     write(out);
 
     await new Promise((resolve) =>

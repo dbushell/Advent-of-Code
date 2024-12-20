@@ -1,6 +1,8 @@
 import { assert } from "jsr:@std/assert/assert";
 import { Cell, type State, type XY } from "./types.ts";
 
+export const keyXY = (xy: XY) => (`${xy.x},${xy.y}`);
+
 export const upXY = ({ x, y }: XY) => ({ x, y: y - 1 });
 export const downXY = ({ x, y }: XY) => ({ x, y: y + 1 });
 export const leftXY = ({ x, y }: XY) => ({ x: x - 1, y });
@@ -10,6 +12,29 @@ export const rightXY = ({ x, y }: XY) => ({ x: x + 1, y });
 export const adjacentXY = (
   xy: XY,
 ) => [upXY(xy), downXY(xy), leftXY(xy), rightXY(xy)];
+
+/** Get neighbours up to distance inclusive */
+export const surroundXY = (xy: XY, distance = 1): Array<XY> => {
+  const surround = new Map<string, XY>();
+  let border = new Map<string, XY>();
+  surround.set(keyXY(xy), xy);
+  border.set(keyXY(xy), xy);
+  for (let i = 0; i < distance; i++) {
+    const nextBorder = new Map<string, XY>();
+    for (const cell of border.values()) {
+      adjacentXY(cell).forEach((c) => {
+        const key = keyXY(c);
+        if (!surround.has(key)) {
+          surround.set(key, c);
+          nextBorder.set(key, c);
+        }
+      });
+    }
+    border = nextBorder;
+  }
+  surround.delete(keyXY(xy));
+  return surround.values().toArray();
+};
 
 /** Position is within bounds */
 export const isXY = (state: State, { x, y }: XY): boolean => {
