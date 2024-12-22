@@ -1,12 +1,16 @@
 #!/usr/bin/env -S deno run --allow-read
 
+/**
+ * NOT SOLVED !!
+ */
+
 import { assert } from "jsr:@std/assert/assert";
 
 const inputText = await Deno.readTextFile(
-  new URL("test1.txt", import.meta.url),
+  new URL("input.txt", import.meta.url),
 );
 
-const MAX_ROBOTS = 2;
+const MAX_ROBOTS = 25;
 
 type Keypad = Array<Array<string>>;
 type XY = [number, number];
@@ -49,12 +53,11 @@ const mixParts = (str: string): Array<string> => {
   return [...result];
 };
 
-const mixSequence = (sequence: Array<string>) =>
-  sequence.filter((p) => p.length)
-    .map(mixParts)
-    .reduce(
-      (acc, part) => acc.flatMap((str) => part.map((el) => str + el + "A")),
-      [""],
+const genSequence = (groups: Array<Array<string>>): Array<Array<string>> =>
+  groups.length === 0
+    ? [[]]
+    : groups[0].flatMap((item) =>
+      genSequence(groups.slice(1)).map((comb) => [item, ...comb])
     );
 
 for (const line of inputText.split("\n")) {
@@ -65,137 +68,119 @@ for (const line of inputText.split("\n")) {
   codes.push(code.join(""));
 }
 
-{
-  const calcs: Array<[number, number, number]> = [];
-
-  for (const code of codes) {
-    // Start positions
-    let a1 = xyFind(nPad, "A");
-
-    let bS: Array<string> = [];
-
-    let bestLen: number = 0;
-
-    for (const char of code) {
-      const a2 = xyFind(nPad, char);
-      const [aU, aD, aL, aR] = [
-        Math.max(0, a1[1] - a2[1]),
-        Math.max(0, a2[1] - a1[1]),
-        Math.max(0, a1[0] - a2[0]),
-        Math.max(0, a2[0] - a1[0]),
-      ];
-      bS.push(
-        ...Array(aR).fill(">"),
-        ...Array(aU).fill("^"),
-        ...Array(aD).fill("v"),
-        ...Array(aL).fill("<"),
-      );
-      bS.push("A");
-      a1 = a2;
-    }
-
-    const combos = mixSequence(bS.join("").split("A"));
-
-    comboLoop: for (const combo of combos) {
-      bS = combo.split("");
-
-      // Mind the gap!
-      const p = xyFind(nPad, "A");
-      for (const e of bS) {
-        if (e === "^") p[1]--;
-        if (e === "v") p[1]++;
-        if (e === "<") p[0]--;
-        if (e === ">") p[0]++;
-        if (p[0] === 0 && p[1] === 3) {
-          continue comboLoop;
-        }
-      }
-
-      const cache = new Map<string, number>();
-
-      const recurse = (seq: string, depth = 0) => {
-        if (seq.length === 0) return 0;
-        // console.log(depth);
-        if (cache.has(`${seq}-${depth}`)) {
-          return cache.get(`${seq}-${depth}`)!;
-        }
-
-        let b1 = xyFind(dPad, "A");
-
-        let length = 0;
-        let nextSeq = "";
-
-        for (const char of seq) {
-          let buffer = "";
-          const b2 = xyFind(dPad, char);
-          let bU = Math.max(0, b1[1] - b2[1]);
-          let bD = Math.max(0, b2[1] - b1[1]);
-          let bL = Math.max(0, b1[0] - b2[0]);
-          let bR = Math.max(0, b2[0] - b1[0]);
-
-          while (bR--) {
-            buffer += ">";
-            length++;
-          }
-          while (bU--) {
-            buffer += "^";
-            length++;
-          }
-          while (bD--) {
-            buffer += "v";
-            length++;
-          }
-          while (bL--) {
-            buffer += "<";
-            length++;
-          }
-          // if (buffer.length === 0) {
-          // nextSeq += "A";
-          // length++;
-          // }
-          if (buffer.length) {
-            nextSeq += buffer;
-            // nextSeq += "A";
-            // length++;
-          }
-          nextSeq += "A";
-          length++;
-          b1 = b2;
-        }
-
-        assert(length === nextSeq.length);
-
-        cache.set(`${seq}-${depth}`, length);
-
-        if (depth < MAX_ROBOTS - 1) {
-          nextSeq.split("A").forEach((p) => {
-            length += recurse(p, depth + 1);
-            length += recurse("A", depth + 1);
-          });
-        }
-        return length;
-      };
-
-      let length = 0;
-
-      // console.log(combo, combo.split("A"));
-
-      combo.split("A").forEach((p) => {
-        length += recurse(p);
-        length += recurse("A");
-        cache.clear();
-      });
-
-      if (bestLen === 0 || length < bestLen) {
-        bestLen = length;
-      }
-    }
-    const codeNum = Number.parseInt(code.slice(0, -1));
-    console.log(bestLen, codeNum, codeNum * bestLen);
-    calcs.push([codeNum, bestLen, codeNum * bestLen]);
+const allVariations = (code: string, pad: Keypad): Array<string> => {
+  let a1 = xyFind(pad, "A");
+  let sequence = "";
+  for (const char of code) {
+    const a2 = xyFind(pad, char);
+    let aU = Math.max(0, a1[1] - a2[1]);
+    let aD = Math.max(0, a2[1] - a1[1]);
+    let aL = Math.max(0, a1[0] - a2[0]);
+    let aR = Math.max(0, a2[0] - a1[0]);
+    while (aR--) sequence += ">";
+    while (aU--) sequence += "^";
+    while (aD--) sequence += "v";
+    while (aL--) sequence += "<";
+    sequence += "A";
+    a1 = a2;
   }
-  const complexity = calcs.reduce<number>((v, c) => (v + c[2]), 0);
-  const answerTwo = complexity;
+  if (code === "A") {
+    return ["A"];
+  }
+  const mix = sequence.split("A").map(mixParts);
+  const gen = genSequence(mix);
+  return gen.map((seq) => seq.join("A"));
+};
 
-  console.log(`Answer 2: ${answerTwo}`);
+const complexities: Array<number> = [];
+
+const cache = new Map<string, number>();
+
+const recurse = (seq: string, depth = 0) => {
+  if (seq.length === 0) return 0;
+
+  if (cache.has(`${seq}-${depth}`)) {
+    return cache.get(`${seq}-${depth}`)!;
+  }
+
+  const variations = allVariations(seq, dPad);
+
+  const bestLength = Math.min(...variations.map((vari) => {
+    let varLen = vari.length;
+    const p = xyFind(dPad, "A");
+    for (const e of vari) {
+      if (e === "^") p[1]--;
+      if (e === "v") p[1]++;
+      if (e === "<") p[0]--;
+      if (e === ">") p[0]++;
+      if (p[0] === 0 && p[1] === 0) {
+        return Infinity;
+      }
+    }
+    if (depth < MAX_ROBOTS - 1) {
+      vari.split("A").forEach((p) => {
+        varLen += recurse(p, depth + 1);
+        varLen += recurse("A", depth + 1);
+      });
+    }
+    return varLen;
+  }));
+
+  cache.set(`${seq}-${depth}`, bestLength);
+  return bestLength;
+};
+
+for (const code of codes) {
+  let bestLen = 0;
+
+  const variations = allVariations(code, nPad);
+
+  comboLoop: for (const sequence of variations) {
+    // Mind the gap!
+    const p = xyFind(nPad, "A");
+    for (const e of sequence) {
+      if (e === "^") p[1]--;
+      if (e === "v") p[1]++;
+      if (e === "<") p[0]--;
+      if (e === ">") p[0]++;
+      if (p[0] === 0 && p[1] === 3) {
+        continue comboLoop;
+      }
+    }
+
+    let length = 0;
+
+    // let xA = 0;
+    // for (let x = 0; x < sequence.length; x++) {
+    //   if (sequence[x] === "A") {
+    //     // console.log(sequence, sequence.slice(xA, x));
+    //     length += recurse(sequence.slice(xA, x) + "A");
+    //     // length += recurse("A");
+    //     xA = x + 1;
+    //   }
+    //   cache.clear();
+    // }
+    sequence.split("A").forEach((p, i, arr) => {
+      // if (i === arr.length - 1) return;
+      length += recurse(p);
+      length += recurse("A");
+      // length += recurse(p + "A");
+      cache.clear();
+    });
+
+    // console.log(`${code} ${sequence} ${length}`);
+
+    if (bestLen === 0 || length < bestLen) {
+      bestLen = length;
+    }
+  }
+
+  const complexity = Number.parseInt(code.slice(0, -1)) * bestLen;
+  complexities.push(complexity);
+  console.log(`Code: ${code} Best: ${bestLen} (${complexity})\n`);
 }
+
+const complexity = complexities.reduce((v, c) => v += c, 0);
+const answerTwo = complexity;
+
+console.log(`Answer 2: ${answerTwo}`);
