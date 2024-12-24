@@ -1,9 +1,5 @@
 #!/usr/bin/env -S deno run --allow-read
 
-/**
- * NOT SOLVED !!
- */
-
 import { assert } from "jsr:@std/assert/assert";
 
 const inputText = await Deno.readTextFile(
@@ -16,6 +12,15 @@ type Keypad = Array<Array<string>>;
 type XY = [number, number];
 
 const codes: Array<string> = [];
+for (const line of inputText.split("\n")) {
+  const code = Array.from(
+    line.matchAll(/([\d|A])/g).map((m) => m[1]),
+  );
+  if (code.length !== 4) continue;
+  codes.push(code.join(""));
+}
+
+const cache = new Map<string, number>();
 
 const nPad: Keypad = [
   ["7", "8", "9"],
@@ -36,6 +41,28 @@ const xyFind = (pad: Keypad, value: string): XY => {
     }
   }
   assert(false, "xyFind missing");
+};
+
+const encode = (code: string, pad: Keypad, depth = 0) => {
+  let a1 = xyFind(pad, "A");
+  let sequence = "";
+  for (const char of code) {
+    const a2 = xyFind(pad, char);
+    let aU = Math.max(0, a1[1] - a2[1]);
+    let aD = Math.max(0, a2[1] - a1[1]);
+    let aL = Math.max(0, a1[0] - a2[0]);
+    let aR = Math.max(0, a2[0] - a1[0]);
+    while (aR--) sequence += ">";
+    while (aU--) sequence += "^";
+    while (aD--) sequence += "v";
+    while (aL--) sequence += "<";
+    sequence += "A";
+    a1 = a2;
+  }
+  while (depth--) {
+    sequence = encode(sequence, pad, 0);
+  }
+  return sequence;
 };
 
 const mixParts = (str: string): Array<string> => {
@@ -60,127 +87,79 @@ const genSequence = (groups: Array<Array<string>>): Array<Array<string>> =>
       genSequence(groups.slice(1)).map((comb) => [item, ...comb])
     );
 
-for (const line of inputText.split("\n")) {
-  const code = Array.from(
-    line.matchAll(/([\d|A])/g).map((m) => m[1]),
-  );
-  if (code.length !== 4) continue;
-  codes.push(code.join(""));
-}
-
-const allVariations = (code: string, pad: Keypad): Array<string> => {
-  let a1 = xyFind(pad, "A");
-  let sequence = "";
-  for (const char of code) {
-    const a2 = xyFind(pad, char);
-    let aU = Math.max(0, a1[1] - a2[1]);
-    let aD = Math.max(0, a2[1] - a1[1]);
-    let aL = Math.max(0, a1[0] - a2[0]);
-    let aR = Math.max(0, a2[0] - a1[0]);
-    while (aR--) sequence += ">";
-    while (aU--) sequence += "^";
-    while (aD--) sequence += "v";
-    while (aL--) sequence += "<";
-    sequence += "A";
-    a1 = a2;
-  }
-  if (code === "A") {
-    return ["A"];
-  }
-  const mix = sequence.split("A").map(mixParts);
+const allVariations = (code: string): Array<string> => {
+  const mix = code.split("A").map(mixParts);
   const gen = genSequence(mix);
-  return gen.map((seq) => seq.join("A"));
+  const all = gen.map((seq) => seq.join("A"));
+  return all;
 };
 
-const complexities: Array<number> = [];
+const recurse = (sequence: string, depth = 0) => {
+  if (sequence.length === 0) return 0;
 
-const cache = new Map<string, number>();
-
-const recurse = (seq: string, depth = 0) => {
-  if (seq.length === 0) return 0;
-
-  if (cache.has(`${seq}-${depth}`)) {
-    return cache.get(`${seq}-${depth}`)!;
+  // Check cache
+  if (cache.has(`${depth}-${sequence}`)) {
+    return cache.get(`${depth}-${sequence}`)!;
   }
 
-  const variations = allVariations(seq, dPad);
+  // Mind the gap (number pad)
+  if (depth === 0) {
+    const p = xyFind(nPad, "A");
+    for (const char of sequence) {
+      if (char === "^") p[1]--;
+      if (char === "v") p[1]++;
+      if (char === "<") p[0]--;
+      if (char === ">") p[0]++;
+      if (p[0] === 0 && p[1] === 3) {
+        return Infinity;
+      }
+    }
+  }
 
-  const bestLength = Math.min(...variations.map((vari) => {
-    let varLen = vari.length;
+  // Generate all
+  const variations = allVariations(sequence);
+
+  // Find shortest
+  const bestLength = Math.min(...variations.map((variation) => {
+    // Mind the gap (directional pad)
     const p = xyFind(dPad, "A");
-    for (const e of vari) {
-      if (e === "^") p[1]--;
-      if (e === "v") p[1]++;
-      if (e === "<") p[0]--;
-      if (e === ">") p[0]++;
+    for (const char of variation) {
+      if (char === "^") p[1]--;
+      if (char === "v") p[1]++;
+      if (char === "<") p[0]--;
+      if (char === ">") p[0]++;
       if (p[0] === 0 && p[1] === 0) {
         return Infinity;
       }
     }
-    if (depth < MAX_ROBOTS - 1) {
-      vari.split("A").forEach((p) => {
-        varLen += recurse(p, depth + 1);
-        varLen += recurse("A", depth + 1);
-      });
+    if (depth === MAX_ROBOTS) {
+      return variation.length;
     }
-    return varLen;
+    let length = 0;
+    variation.split("A").forEach((p, i, arr) => {
+      if (i === arr.length - 1) return;
+      const code = encode(p + "A", dPad);
+      length += recurse(code, depth + 1);
+    });
+    return length;
   }));
 
-  cache.set(`${seq}-${depth}`, bestLength);
+  // Cache length
+  cache.set(`${depth}-${sequence}`, bestLength);
   return bestLength;
 };
 
+const complexities: Array<number> = [];
+
 for (const code of codes) {
-  let bestLen = 0;
-
-  const variations = allVariations(code, nPad);
-
-  comboLoop: for (const sequence of variations) {
-    // Mind the gap!
-    const p = xyFind(nPad, "A");
-    for (const e of sequence) {
-      if (e === "^") p[1]--;
-      if (e === "v") p[1]++;
-      if (e === "<") p[0]--;
-      if (e === ">") p[0]++;
-      if (p[0] === 0 && p[1] === 3) {
-        continue comboLoop;
-      }
-    }
-
-    let length = 0;
-
-    // let xA = 0;
-    // for (let x = 0; x < sequence.length; x++) {
-    //   if (sequence[x] === "A") {
-    //     // console.log(sequence, sequence.slice(xA, x));
-    //     length += recurse(sequence.slice(xA, x) + "A");
-    //     // length += recurse("A");
-    //     xA = x + 1;
-    //   }
-    //   cache.clear();
-    // }
-    sequence.split("A").forEach((p, i, arr) => {
-      // if (i === arr.length - 1) return;
-      length += recurse(p);
-      length += recurse("A");
-      // length += recurse(p + "A");
-      cache.clear();
-    });
-
-    // console.log(`${code} ${sequence} ${length}`);
-
-    if (bestLen === 0 || length < bestLen) {
-      bestLen = length;
-    }
-  }
-
-  const complexity = Number.parseInt(code.slice(0, -1)) * bestLen;
+  const variations = allVariations(encode(code, nPad));
+  const length = Math.min(
+    ...variations.map((vari) => recurse(vari, 0)),
+  );
+  const complexity = Number.parseInt(code.slice(0, -1)) * length;
   complexities.push(complexity);
-  console.log(`Code: ${code} Best: ${bestLen} (${complexity})\n`);
+  console.log(`Code: ${code} Best: ${length} (${complexity})\n`);
 }
 
-const complexity = complexities.reduce((v, c) => v += c, 0);
-const answerTwo = complexity;
-
+const answerTwo = complexities.reduce((v, c) => v += c, 0);
 console.log(`Answer 2: ${answerTwo}`);
