@@ -1,4 +1,6 @@
 /**/*.*
 !/**/*.ts
+!/**/*.test.ts
+!/**/*.bench.ts
 !.gitignore
 !README.md
