@@ -128,3 +128,42 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  name: "Day 9 part 1 example",
+  async fn(test) {
+    await test.step({
+      name: "Example 1",
+      async fn() {
+        const memory = toMemory(Deno.readTextFileSync(
+          new URL("09/test1.txt", import.meta.url),
+        ));
+        const vm = newVM(memory);
+        await runVM(vm);
+        assertEquals(vm.output.join(","), memory.join(","));
+      },
+    });
+    await test.step({
+      name: "Example 2",
+      async fn() {
+        const memory = toMemory(Deno.readTextFileSync(
+          new URL("09/test2.txt", import.meta.url),
+        ));
+        const vm = newVM(memory);
+        await runVM(vm);
+        assertEquals(String(vm.output.at(-1)!).length, 16);
+      },
+    });
+    await test.step({
+      name: "Example 3",
+      async fn() {
+        const memory = toMemory(Deno.readTextFileSync(
+          new URL("09/test3.txt", import.meta.url),
+        ));
+        const vm = newVM(memory);
+        await runVM(vm);
+        assertEquals(vm.output.at(-1)!, memory[1]);
+      },
+    });
+  },
+});

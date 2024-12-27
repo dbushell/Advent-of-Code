@@ -13,17 +13,20 @@ export enum Opcode {
   JumpFalse = 6,
   LessThan = 7,
   Equals = 8,
+  Relative = 9,
   Halt = 99,
 }
 
 export enum Mode {
   Position = 0,
   Immediate = 1,
+  Relative = 2,
 }
 
 export type Machine = {
   id: string;
   pointer: number;
+  relative: number;
   input: Array<number>;
   output: Array<number>;
   memory: Array<number>;
@@ -39,6 +42,7 @@ export type Return = number | typeof halt | typeof wait;
 export const newVM = (memory: Array<number> = [], id = "vm"): Machine => ({
   id,
   pointer: 0,
+  relative: 0,
   output: [],
   input: [],
   memory: [...memory],
@@ -54,14 +58,23 @@ export const linkVM = (a: Machine, b: Machine) => {
 
 export const execute = (vm: Machine): Return => {
   // Read address
-  const at = (position: number) => vm.memory[position];
+  const at = (position: number) => vm.memory[position] ?? 0;
   // Get instruction opcode and parameter modes
   const digits = String(at(vm.pointer)).padStart(5, "0");
   const opcode = Number(digits.slice(3));
   // Return parameter write address
   const write = (position: number): number => {
+    assert(position >= 0, "Write out of bounds!");
+    const mode: Mode = Number(digits.at(3 - position));
     const parameter = at(vm.pointer + position);
-    return parameter;
+    switch (mode) {
+      case Mode.Position:
+        return parameter;
+      case Mode.Relative:
+        return parameter + vm.relative;
+      default:
+        assert(false, "Bad write parameter mode!");
+    }
   };
   // Return parameter read address
   const read = (position: number): number => {
@@ -72,8 +85,10 @@ export const execute = (vm: Machine): Return => {
         return at(parameter);
       case Mode.Immediate:
         return parameter;
+      case Mode.Relative:
+        return at(parameter + vm.relative);
       default:
-        assert(false, "Bad parameter mode!");
+        assert(false, "Bad read parameter mode!");
     }
   };
   switch (opcode) {
@@ -108,6 +123,9 @@ export const execute = (vm: Machine): Return => {
     case Opcode.Equals:
       vm.memory[write(3)] = read(1) === read(2) ? 1 : 0;
       return 4;
+    case Opcode.Relative:
+      vm.relative += read(1);
+      return 2;
     case Opcode.Halt:
       return halt;
     default:
@@ -118,19 +136,26 @@ export const execute = (vm: Machine): Return => {
 
 /** Execute all instructions */
 export const runVM = (vm: Machine): Promise<boolean> => {
-  const tick = () => {
-    const increment = execute(vm);
-    if (increment === halt) {
-      vm.halted.resolve(true);
-      return;
+  const start = () => {
+    let increment: Return;
+    while (true) {
+      increment = execute(vm);
+      // Program ended
+      if (increment === halt) {
+        vm.halted.resolve(true);
+        break;
+      }
+      // Waiting for input
+      if (increment === wait) {
+        break;
+      }
+      vm.pointer += increment;
     }
+    // Poll for input
     if (increment === wait) {
-      setTimeout(tick, 0);
-      return;
+      setTimeout(start, 0);
     }
-    vm.pointer += increment;
-    tick();
   };
-  tick();
+  start();
   return vm.halted.promise;
 };
