@@ -65,4 +65,4 @@ reportLoop: for (const report of reports) {
   }
 }
 
-console.log(`Answer 1: ${answerTwo}`);
+console.log(`Answer 2: ${answerTwo}`);

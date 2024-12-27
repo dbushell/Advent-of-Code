@@ -132,7 +132,7 @@ let answerTwo = 0;
 }
 
 console.log(`Answer 1: ${answerOne}`);
-console.log(`Answer 1: ${answerTwo}`);
+console.log(`Answer 2: ${answerTwo}`);
 
 // const printMap = (map: Floor, robots: Array<Robot>) => {
 //   map = structuredClone(map);

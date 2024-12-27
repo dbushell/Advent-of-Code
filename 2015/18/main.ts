@@ -105,7 +105,7 @@ const step = (grid: Grid) => {
   }
 
   const answerTwo = grid2.flat().reduce((count, state) => (count + state), 0);
-  console.log(`Answer 1: ${answerTwo}`);
+  console.log(`Answer 2: ${answerTwo}`);
 }
 
 // const print = (grid: Grid) => {
