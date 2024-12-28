@@ -17,10 +17,6 @@ const inputProgram = inputText.trim().split(",").map(Number);
   console.log(`Answer 1: ${answerOne}`);
 }
 
-/*************
- * PART TWO! *
- *************/
-
 {
   let noun = 0;
   let verb = 0;

@@ -16,10 +16,6 @@ const inputProgram = inputText.trim().split(",").map(Number);
   console.log(`Answer 1: ${answerOne}`);
 }
 
-// /*************
-//  * PART TWO! *
-//  *************/
-
 {
   const vm = newVM(inputProgram);
   vm.input = [5];

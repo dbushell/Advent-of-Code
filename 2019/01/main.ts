@@ -11,10 +11,6 @@ const calcFuel = (mass: number) => Math.max(0, Math.floor(mass / 3) - 2);
 const answerOne = modules.reduce((total, mass) => total += calcFuel(mass), 0);
 console.log(`Answer 1: ${answerOne}`);
 
-/*************
- * PART TWO! *
- *************/
-
 const cache = new Map<number, number>();
 
 const memoFuel = (mass: number): number => {
