@@ -6,10 +6,10 @@ const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
 );
 
-const inputProgram = inputText.trim().split(",").map(Number);
+const memory = inputText.trim().split(",").map(Number);
 
 {
-  const vm = newVM(inputProgram);
+  const vm = newVM(memory);
   vm.memory[1] = 12;
   vm.memory[2] = 2;
   await runVM(vm);
@@ -22,7 +22,7 @@ const inputProgram = inputText.trim().split(",").map(Number);
   let verb = 0;
   loop: for (noun = 0; noun < 100; noun++) {
     for (verb = 0; verb < 100; verb++) {
-      const vm = newVM(inputProgram);
+      const vm = newVM(memory);
       vm.memory[1] = noun;
       vm.memory[2] = verb;
       await runVM(vm);

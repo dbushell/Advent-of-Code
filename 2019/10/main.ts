@@ -125,6 +125,10 @@ const station = asteroids.at(-1)!;
 const answerOne = station.inView.length;
 console.log(`Answer 1: ${answerOne}`);
 
+/*************
+ * PART TWO! *
+ *************/
+
 // Remove base station
 asteroids.splice(asteroids.indexOf(station));
 

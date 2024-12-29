@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read
 
 import { assert } from "jsr:@std/assert/assert";
-import { type Machine, newVM, runVM } from "../intcode.ts";
+import { type Machine, newVM, proxyVM, runVM } from "../intcode.ts";
 
 const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
@@ -59,8 +59,8 @@ const onOutput = (vm: Machine, path: Path, colors: Map<string, number>) => {
 };
 
 {
-  const inputProgram = inputText.trim().split(",").map(Number);
-  const vm = newVM(inputProgram);
+  const memory = inputText.trim().split(",").map(Number);
+  const vm = newVM(memory);
 
   const colors = new Map<string, number>();
 
@@ -70,15 +70,10 @@ const onOutput = (vm: Machine, path: Path, colors: Map<string, number>) => {
     dir: Dir.Up,
   }];
 
-  vm.output = new Proxy<Array<number>>(vm.output, {
-    set(target, prop, value, receiver) {
-      const set = Reflect.set(target, prop, value, receiver);
-      if (Number.isInteger(Number(prop))) {
-        if (vm.output.length % 2 === 0) onOutput(vm, path, colors);
-      }
-      return set;
-    },
+  proxyVM(vm, undefined, () => {
+    if (vm.output.length % 2 === 0) onOutput(vm, path, colors);
   });
+
   vm.input.push(0);
   await runVM(vm);
 
@@ -91,8 +86,8 @@ const onOutput = (vm: Machine, path: Path, colors: Map<string, number>) => {
  *************/
 
 {
-  const inputProgram = inputText.trim().split(",").map(Number);
-  const vm = newVM(inputProgram);
+  const memory = inputText.trim().split(",").map(Number);
+  const vm = newVM(memory);
 
   const colors = new Map<string, number>();
 

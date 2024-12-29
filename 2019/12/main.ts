@@ -95,6 +95,10 @@ for (let i = 0; i < 1000; i++) step();
 const answerOne = energy();
 console.log(`Answer 1: ${answerOne}`);
 
+/*************
+ * PART TWO! *
+ *************/
+
 const key = (prop: keyof XYZ) =>
   moonArray.map((moon) => (
     moon.position[prop] + "," + moon.velocity[prop]

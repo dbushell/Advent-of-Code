@@ -6,10 +6,10 @@ const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
 );
 
-const inputProgram = inputText.trim().split(",").map(Number);
+const memory = inputText.trim().split(",").map(Number);
 
 {
-  const vm = newVM(inputProgram);
+  const vm = newVM(memory);
   vm.input = [1];
   await runVM(vm);
   const answerOne = vm.output.at(-1);
@@ -17,7 +17,7 @@ const inputProgram = inputText.trim().split(",").map(Number);
 }
 
 {
-  const vm = newVM(inputProgram);
+  const vm = newVM(memory);
   vm.input = [5];
   await runVM(vm);
   const answerTwo = vm.output.at(-1);

@@ -7,8 +7,6 @@ const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
 );
 
-const inputProgram = inputText.trim().split(",").map(Number);
-
 export const ampSequence = async (
   sequence: Array<number>,
   memory: Array<number>,
@@ -70,11 +68,12 @@ const combinations = (list: Array<number>, start = 0): Array<Array<number>> => {
 };
 
 if (import.meta.main) {
+  const memory = inputText.trim().split(",").map(Number);
   {
     const sequences = combinations([0, 1, 2, 3, 4]);
     const signals: Array<{ seq: Array<number>; output: number }> = [];
     for (const seq of sequences) {
-      signals.push({ seq, output: await ampSequence(seq, inputProgram) });
+      signals.push({ seq, output: await ampSequence(seq, memory) });
     }
     signals.sort((a, b) => a.output - b.output);
     const answerOne = signals.at(-1)!.output;
@@ -84,7 +83,7 @@ if (import.meta.main) {
     const sequences = combinations([5, 6, 7, 8, 9]);
     const signals: Array<{ seq: Array<number>; output: number }> = [];
     for (const seq of sequences) {
-      signals.push({ seq, output: await feedbackSequence(seq, inputProgram) });
+      signals.push({ seq, output: await feedbackSequence(seq, memory) });
     }
     signals.sort((a, b) => a.output - b.output);
     const answerTwo = signals.at(-1)!.output;

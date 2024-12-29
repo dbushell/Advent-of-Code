@@ -46,7 +46,7 @@ export const isXY = (state: State, { x, y }: XY): boolean => {
 
 /** Get cell type at position */
 export const getXY = (state: State, { x, y }: XY): Cell => {
-  assert(isXY(state, { x, y }), "atXY out of bounds");
+  assert(isXY(state, { x, y }), "getXY out of bounds");
   return state.grid[y][x];
 };
 
