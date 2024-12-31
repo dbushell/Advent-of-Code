@@ -3,6 +3,7 @@
 import { type Memory, newVM, proxyVM, runVM } from "../intcode.ts";
 import { Color, color, screen, write } from "../debug.ts";
 import { assert } from "jsr:@std/assert/assert";
+import { adjacentXY, keyXY, sameXY, setXY } from "../helpers.ts";
 
 const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
@@ -32,39 +33,6 @@ enum Cell {
 }
 
 type XY = { x: number; y: number };
-
-type Grid = Array<Array<string>>;
-
-const keyXY = ({ x, y }: XY) => (`${x},${y}`);
-
-const sortXY = (a: XY, b: XY): number => {
-  return (a.y - b.y) || (a.x - b.x);
-};
-
-const sameXY = (a: XY, b: XY): boolean => {
-  return sortXY(a, b) === 0;
-};
-
-const upXY = ({ x, y }: XY) => ({ x, y: y - 1 });
-const downXY = ({ x, y }: XY) => ({ x, y: y + 1 });
-const leftXY = ({ x, y }: XY) => ({ x: x - 1, y });
-const rightXY = ({ x, y }: XY) => ({ x: x + 1, y });
-
-const adjacentXY = (
-  xy: XY,
-) => [upXY(xy), downXY(xy), leftXY(xy), rightXY(xy)];
-
-const isXY = (grid: Grid, { x, y }: XY): boolean => {
-  if (x < 0 || y < 0) return false;
-  if (y >= grid.length) return false;
-  if (x >= grid[y].length) return false;
-  return true;
-};
-
-const setXY = (grid: Grid, { x, y }: XY, value: string) => {
-  assert(isXY(grid, { x, y }), "setXY out of bounds");
-  grid[y][x] = value;
-};
 
 const moveXY = ({ x, y }: XY, direction: Move) => {
   switch (direction) {
