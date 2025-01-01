@@ -111,13 +111,13 @@ const findXY = (
       return route.reverse();
     }
     for (const { x, y } of adjacentXY(current)) {
-      const neighbor = { x, y };
-      const key = keyXY(neighbor);
+      const neighbour = { x, y };
+      const key = keyXY(neighbour);
       if (blocked.has(key)) continue;
       if (visited.has(key)) continue;
       if (allowed && !allowed.has(key)) continue;
       visited.set(key, current);
-      queue.push(neighbor);
+      queue.push(neighbour);
     }
   }
   return [];

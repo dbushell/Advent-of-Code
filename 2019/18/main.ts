@@ -78,14 +78,14 @@ const findXY = (state: State, start: XY, end: XY): Array<XY> => {
       return route.reverse();
     }
     for (const { x, y } of adjacentXY(current)) {
-      const neighbor = { x, y };
-      if (!isXY(state.grid, neighbor)) continue;
-      if (getXY(state.grid, neighbor) === "#") continue;
-      const key = keyXY(neighbor);
+      const neighbour = { x, y };
+      if (!isXY(state.grid, neighbour)) continue;
+      if (getXY(state.grid, neighbour) === "#") continue;
+      const key = keyXY(neighbour);
       if (state.locked.has(key)) continue;
       if (visited.has(key)) continue;
       visited.set(key, current);
-      queue.push(neighbor);
+      queue.push(neighbour);
     }
   }
   return [];
