@@ -30,9 +30,9 @@ const getHappiness = (list: Array<Person>) => {
     const right = person.happiness.get(person.right);
     assert(left !== undefined, "Missing left happiness");
     assert(right !== undefined, "Missing right happiness");
-    console.log(
-      `${person.left.name} <- ${left} ${person.name} ${right} -> ${person.right.name}`,
-    );
+    // console.log(
+    //   `${person.left.name} <- ${left} ${person.name} ${right} -> ${person.right.name}`,
+    // );
     happiness += left + right;
   }
   return happiness;
@@ -84,7 +84,6 @@ let bestList: Array<Person> | undefined;
   for (const names of arrangements) {
     const list = getArrangement(names);
     const happiness = getHappiness(list);
-    console.log(`${happiness}`);
     if (happiness > bestHappiness) {
       bestHappiness = happiness;
       bestList = list;

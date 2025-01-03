@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-read
 
-import { type Memory, newVM, proxyVM, runVM } from "../intcode.ts";
+import { type Memory, newVM, outputVM, runVM } from "../intcode.ts";
 
 const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
@@ -14,7 +14,7 @@ const memory: Memory = inputText.trim().split(",").map(Number);
     grid[y] = Array(50);
     for (let x = 0; x < 50; x++) {
       const vm = newVM(memory);
-      proxyVM(vm, undefined, () => (grid[y][x] = vm.output.at(-1) ? "#" : "."));
+      outputVM(vm, () => (grid[y][x] = vm.output.at(-1) ? "#" : "."));
       vm.input.push(x, y);
       await runVM(vm);
     }
@@ -49,7 +49,7 @@ const memory: Memory = inputText.trim().split(",").map(Number);
       for (let ix = x; ix < x + width; ix++) {
         const gX = ix - x;
         const vm = newVM(memory);
-        proxyVM(vm, undefined, () => {
+        outputVM(vm, () => {
           grid[gY][gX] = vm.output.at(-1) ? "#" : ".";
         });
         vm.input.push(ix, iy);

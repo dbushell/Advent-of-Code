@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-read
 
-import { type Memory, newVM, proxyVM, runVM } from "../intcode.ts";
+import { type Memory, newVM, outputVM, runVM } from "../intcode.ts";
 import { Color, color, screen, write } from "../debug.ts";
 import { assert } from "jsr:@std/assert/assert";
 import { adjacentXY, keyXY, sameXY, setXY } from "../helpers.ts";
@@ -239,7 +239,7 @@ const oxygen = async () => {
   Deno.exit();
 };
 
-proxyVM(vm, undefined, () => {
+outputVM(vm, () => {
   const status = vm.output.at(-1)!;
   assert(status >= 0 && status <= 2, "Bad status report");
   if (status === Status.Found) {

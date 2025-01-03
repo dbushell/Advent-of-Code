@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read
 
 import { assert } from "jsr:@std/assert/assert";
-import { linkVM, newVM, runVM } from "../intcode.ts";
+import { newVM, runVM } from "../intcode.ts";
 
 const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
@@ -33,11 +33,11 @@ export const feedbackSequence = async (
     newVM(memory, "m4"),
     newVM(memory, "m5"),
   ];
-  linkVM(vms[0], vms[1]);
-  linkVM(vms[1], vms[2]);
-  linkVM(vms[2], vms[3]);
-  linkVM(vms[3], vms[4]);
-  linkVM(vms[4], vms[0]);
+  vms[1].input = vms[0].output;
+  vms[2].input = vms[1].output;
+  vms[3].input = vms[2].output;
+  vms[4].input = vms[3].output;
+  vms[0].input = vms[4].output;
   for (let i = 0; i < sequence.length; i++) {
     vms[i].input.push(sequence[i]);
   }

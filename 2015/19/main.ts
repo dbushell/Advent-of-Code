@@ -30,13 +30,6 @@ for (const line of inputText.split("\n")) {
 const variations = new Set<string>();
 
 for (const re of replacements) {
-  // for (let i = 0; i < molecule.length; i++) {
-  //   if (molecule.substring(i, i + re.from.length) !== re.from) continue;
-  //   const prefix = molecule.substring(0, i);
-  //   const suffix = molecule.substring(i + re.from.length);
-  //   const newMolecule = prefix + re.to + suffix;
-  //   variations.add(newMolecule);
-  // }
   for (const match of targetMolecule.matchAll(new RegExp(re.from, "g"))) {
     const i = match.index;
     const prefix = targetMolecule.slice(0, i);
@@ -53,26 +46,17 @@ console.log(`Answer 1: ${answerOne}`);
  * PART TWO! *
  *************/
 
-// const cache = new Map<string, number>();
-const seen = new Set<string>();
-
 type Queued = { molecule: string; steps: number };
 
-let i = 0;
-
+const seen = new Set<string>();
 const queue: Array<Queued> = [];
 
 const expand = ({ molecule, steps }: Queued) => {
   if (molecule === "e") {
-    console.log(`\nAnswer 2: ${steps}`);
+    console.log(`Answer 2: ${steps}`);
     queue.length = 0;
     return;
   }
-  // console.log(
-  //   String(steps).padStart(4, " "),
-  //   String(molecule.length).padStart(4, " "),
-  //   molecule,
-  // );
   for (const re of replacements) {
     for (const match of molecule.matchAll(new RegExp(re.to, "g"))) {
       const i = match.index;

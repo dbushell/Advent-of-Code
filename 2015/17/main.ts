@@ -41,12 +41,9 @@ const group = (
   return groups;
 };
 
-performance.mark("a1");
 const groups = group(numbers);
 const answerOne = groups.length;
-performance.mark("a2");
-const { duration } = performance.measure("a", "a1", "a2");
-console.log(`Answer 1: ${answerOne} (${duration.toFixed(2)}ms)`);
+console.log(`Answer 1: ${answerOne}`);
 
 // Count all smallest groups
 groups.sort((a, b) => b.length - a.length);

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-read
 
-import { type Memory, newVM, proxyVM, runVM } from "../intcode.ts";
+import { type Memory, newVM, outputVM, runVM } from "../intcode.ts";
 import { screen } from "../debug.ts";
 
 const inputText = await Deno.readTextFile(
@@ -79,7 +79,7 @@ for (const program of combinations(commands)) {
   let state = State.Input;
   let outputText = "";
 
-  proxyVM(vm, undefined, () => {
+  outputVM(vm, () => {
     const code = vm.output.at(-1)!;
     if (code > 255) {
       console.log(input);

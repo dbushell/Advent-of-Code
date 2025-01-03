@@ -1,10 +1,11 @@
 #!/usr/bin/env -S deno run --allow-read
 
 import {
+  inputVM,
   type Machine,
   type Memory,
   newVM,
-  proxyVM,
+  outputVM,
   runVM,
   saveVM,
 } from "../intcode.ts";
@@ -52,7 +53,7 @@ let height = 0;
   const vm = newVM(memory);
   // Count block tiles
   let answerOne = 0;
-  proxyVM(vm, undefined, () => {
+  outputVM(vm, () => {
     if (vm.output.length % 3 === 0) {
       if (vm.output.at(-1) === Tile.Block) answerOne++;
       width = Math.max(0, vm.output.at(-3)!);
@@ -178,9 +179,11 @@ let height = 0;
       maxBounces = Math.max(maxBounces, bounces.length);
     };
 
-    proxyVM(vm, ({ prop }) => {
-      if (prop === "shift") setTimeout(step, framerate);
-    }, () => {
+    inputVM(vm, () => {
+      setTimeout(step, framerate);
+    });
+
+    outputVM(vm, () => {
       read++;
       if (read === 3) {
         read = 0;

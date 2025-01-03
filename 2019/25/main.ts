@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read
 
 import { screen, write } from "../debug.ts";
-import { type Memory, newVM, proxyVM, runVM } from "../intcode.ts";
+import { type Memory, newVM, outputVM, runVM } from "../intcode.ts";
 
 const inputText = await Deno.readTextFile(
   new URL("input.txt", import.meta.url),
@@ -92,7 +92,7 @@ const frame = () => {
   write(`-> ${input}`);
 };
 
-proxyVM(vm, undefined, () => {
+outputVM(vm, () => {
   const code = vm.output.at(-1)!;
   if (code < 255) {
     output += String.fromCodePoint(code);

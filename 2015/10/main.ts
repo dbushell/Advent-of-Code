@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read
 
 const inputText = await Deno.readTextFile(
-  new URL("test1.txt", import.meta.url),
+  new URL("input.txt", import.meta.url),
 );
 
 const next = (input: string): string => {
@@ -23,31 +23,11 @@ const next = (input: string): string => {
 {
   let input = inputText.trim();
   let answerOne = 0;
-  performance.mark("a");
   for (let i = 0; i < 50; i++) {
     input = next(input);
     if (i === 39) answerOne = input.length;
   }
-  performance.mark("b");
   const answerTwo = input.length;
   console.log(`Answer 1: ${answerOne}`);
   console.log(`Answer 2: ${answerTwo}`);
-  const { duration } = performance.measure("c", "a", "b");
-  console.log(`${duration.toFixed(2)}ms`);
-}
-
-{
-  let input = inputText.trim();
-  let answerOne = 0;
-  performance.mark("a");
-  for (let i = 0; i < 50; i++) {
-    input = input.replaceAll(/(\d)\1*/g, (match) => (match.length + match[0]));
-    if (i === 39) answerOne = input.length;
-  }
-  performance.mark("b");
-  const answerTwo = input.length;
-  console.log(`Answer 1: ${answerOne}`);
-  console.log(`Answer 2: ${answerTwo}`);
-  const { duration } = performance.measure("c", "a", "b");
-  console.log(`${duration.toFixed(2)}ms`);
 }

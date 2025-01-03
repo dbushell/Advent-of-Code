@@ -4,7 +4,7 @@ import {
   type Machine,
   type Memory,
   newVM,
-  proxyVM,
+  outputVM,
   runVM,
 } from "../intcode.ts";
 
@@ -42,7 +42,7 @@ const natMonitor = () => {
 for (let i = 0; i < 50; i++) {
   const vm = newVM(memory);
   vm.input.push(i, -1);
-  proxyVM(vm, undefined, () => {
+  outputVM(vm, () => {
     clearTimeout(natTimer);
     natMonitor();
     const length = vm.output.length;

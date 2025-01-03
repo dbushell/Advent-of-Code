@@ -2,7 +2,7 @@
 
 import { assert } from "jsr:@std/assert/assert";
 
-import { type Memory, newVM, proxyVM, runVM } from "../intcode.ts";
+import { type Memory, newVM, outputVM, runVM } from "../intcode.ts";
 import { Color, color, screen, write } from "../debug.ts";
 import { adjacentXY, keyXY } from "../helpers.ts";
 
@@ -292,7 +292,7 @@ const getRoutine = () => {
   ];
 };
 
-proxyVM(vm, undefined, () => {
+outputVM(vm, () => {
   const code = vm.output.at(-1)!;
   if (code > 255) {
     logText += `Answer 2: ${code}\n`;

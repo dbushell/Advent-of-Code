@@ -4,22 +4,6 @@ import { assert } from "jsr:@std/assert/assert";
 
 export type Deferred<T> = ReturnType<typeof Promise.withResolvers<T>>;
 
-type ProxyParams<P extends keyof ProxyHandler<T>, T extends object = Memory> =
-  Parameters<NonNullable<ProxyHandler<T>[P]>>;
-
-type ProxySetArgs = {
-  target: ProxyParams<"set">[0];
-  prop: ProxyParams<"set">[1];
-  value: ProxyParams<"set">[2];
-  receiver: ProxyParams<"set">[3];
-};
-
-type ProxyGetArgs = {
-  target: ProxyParams<"get">[0];
-  prop: ProxyParams<"get">[1];
-  receiver: ProxyParams<"get">[2];
-};
-
 export enum Opcode {
   Add = 1,
   Multiply = 2,
@@ -76,13 +60,6 @@ export const saveVM = (vm: Machine): Machine => {
     memory: [...vm.memory],
     halted: Promise.withResolvers<boolean>(),
   };
-};
-
-/** Link output of vm A to input of vm B */
-export const linkVM = (a: Machine, b: Machine) => {
-  const proxy = new Proxy<Memory>(a.output, {});
-  a.output = proxy;
-  b.input = proxy;
 };
 
 export const execute = (vm: Machine): Return => {
@@ -190,35 +167,25 @@ export const runVM = (vm: Machine): Promise<boolean> => {
 };
 
 /** Proxy output with callback function */
-export const proxyVM = (
-  vm: Machine,
-  inGet?: (args: ProxyGetArgs) => unknown,
-  outSet?: (args: ProxySetArgs) => unknown,
-  indexOnly = true,
-): { input: Memory; output: Memory } => {
-  let { input, output } = vm;
-  if (inGet) {
-    const inputProxy = new Proxy<Memory>(vm.input, {
-      get(target, prop, receiver) {
-        const get = Reflect.get(target, prop, receiver);
-        inGet({ target, prop, receiver });
-        return get;
-      },
-    });
-    vm.input = inputProxy;
-    input = inputProxy;
-  }
-  if (outSet) {
-    const outputProxy = new Proxy<Memory>(vm.output, {
-      set(target, prop, value, receiver) {
-        const set = Reflect.set(target, prop, value, receiver);
-        if (indexOnly && !Number.isInteger(Number(prop))) return set;
-        outSet({ target, prop, value, receiver });
-        return set;
-      },
-    });
-    vm.output = outputProxy;
-    output = outputProxy;
-  }
-  return { input, output };
+export const outputVM = (vm: Machine, callback: () => unknown): void => {
+  const proxy = new Proxy<Memory>(vm.output, {
+    set(target, prop, value, receiver) {
+      const set = Reflect.set(target, prop, value, receiver);
+      if (Number.isInteger(Number(prop))) callback();
+      return set;
+    },
+  });
+  vm.output = proxy;
+};
+
+/** Proxy input with calback function */
+export const inputVM = (vm: Machine, callback: () => unknown): void => {
+  const proxy = new Proxy<Memory>(vm.input, {
+    get(target, prop, receiver) {
+      const get = Reflect.get(target, prop, receiver);
+      if (prop === "shift") callback();
+      return get;
+    },
+  });
+  vm.input = proxy;
 };
