@@ -14,7 +14,7 @@ enum Code {
 type Program = Array<[Code, string | number, string | number]>;
 
 const program = inputText.trim().split("\n").map((line) => {
-  return line.match(/^(\w+)\s([\w\d]+)\s?([-\w\d]+)?$/)!
+  return line.match(/^(\w+)\s([-\w\d]+)\s?([-\w\d]+)?$/)!
     .slice(1, 4).map((s) => Number(s) || s);
 }) as Program;
 

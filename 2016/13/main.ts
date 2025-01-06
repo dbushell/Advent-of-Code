@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-read
 
-import { Color, color } from "../debug.ts";
+// import { Color, color } from "../debug.ts";
 import { adjacentXY, isXY, keyXY } from "../helpers.ts";
 
 const inputText = (await Deno.readTextFile(
@@ -66,9 +66,6 @@ for (let y = 0; y < size.y; y++) {
 const path = findXY(blocked, { x: 1, y: 1 }, { x: 31, y: 39 });
 for (const { x, y } of path) maze[y][x] = "•";
 
-maze[1][1] = color("☆", Color.Yellow);
-maze[39][31] = color("★", Color.Yellow);
-
 let answerTwo = 0;
 const possible: Array<XY> = [];
 for (let y = 0; y < size.y; y++) {
@@ -81,13 +78,15 @@ for (let y = 0; y < size.y; y++) {
   }
 }
 
-for (const { x, y } of possible) maze[y][x] = "*";
-let out = maze.map((layer) => layer.join(" ")).join("\n");
-out = out.replaceAll(".", color(".", Color.Dim));
-out = out.replaceAll("•", color("•", Color.Green));
-out = out.replaceAll("#", color("■", Color.Red));
-out = out.replaceAll("*", color("*", Color.Cyan));
-console.log(out);
+// maze[1][1] = color("☆", Color.Yellow);
+// maze[39][31] = color("★", Color.Yellow);
+// for (const { x, y } of possible) maze[y][x] = "*";
+// let out = maze.map((layer) => layer.join(" ")).join("\n");
+// out = out.replaceAll(".", color(".", Color.Dim));
+// out = out.replaceAll("•", color("•", Color.Green));
+// out = out.replaceAll("#", color("■", Color.Red));
+// out = out.replaceAll("*", color("*", Color.Cyan));
+// console.log(out);
 
 console.log(`Answer 1: ${path.length - 1}`);
 console.log(`Answer 2: ${answerTwo}`);
