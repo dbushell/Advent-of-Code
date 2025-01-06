@@ -1,4 +1,5 @@
 #!/usr/bin/env -S deno run --allow-read
+
 import { crypto } from "jsr:@std/crypto/crypto";
 import { encodeHex } from "jsr:@std/encoding/hex";
 

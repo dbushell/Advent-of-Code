@@ -119,7 +119,7 @@ image[path[0][1]][path[0][0]] = color("★", Color.Yellow);
 // Add real location
 if (HQ) image[HQ[1]][HQ[0]] = color("★", Color.Yellow);
 
-console.log(image.map((layer) => layer.join(" ")).join("\n"));
+// console.log(image.map((layer) => layer.join(" ")).join("\n"));
 
 const answerOne = distance(path.at(0)!, path.at(-1)!);
 console.log(`Answer 1: ${answerOne}`);
