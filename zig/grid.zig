@@ -4,7 +4,7 @@ const AutoHashMap = std.AutoHashMap;
 const Allocator = std.mem.Allocator;
 const Point = @import("./point.zig").Point;
 
-const GridError = error{OutOfBounds};
+const GridError = error{ OutOfBounds, PathNotFound };
 
 pub fn Grid(comptime T: type) type {
     return struct {
@@ -39,40 +39,39 @@ pub fn Grid(comptime T: type) type {
         }
 
         /// Returns true if point is valid
-        pub fn inBounds(self: Self, xy: Point) bool {
-            if (xy.x < 0 or xy.x >= self.width) return false;
-            if (xy.y < 0 or xy.y >= self.height) return false;
+        pub fn inBounds(self: Self, p: Point) bool {
+            if (p.x < 0 or p.x >= self.width) return false;
+            if (p.y < 0 or p.y >= self.height) return false;
             return true;
         }
 
         /// Return value at point
-        pub fn get(self: Self, xy: Point) GridError!T {
-            if (!self.inBounds(xy)) return error.OutOfBounds;
-            return self.data[@intCast(xy.y)][@intCast(xy.x)];
+        pub fn get(self: Self, p: Point) GridError!T {
+            if (!self.inBounds(p)) return error.OutOfBounds;
+            return self.data[@intCast(p.y)][@intCast(p.x)];
         }
 
         /// Set value at point
-        pub fn set(self: *Self, xy: Point, value: T) GridError!void {
-            if (!self.inBounds(xy)) return error.OutOfBounds;
-            self.data[@intCast(xy.y)][@intCast(xy.x)] = value;
+        pub fn set(self: *Self, p: Point, value: T) GridError!void {
+            if (!self.inBounds(p)) return error.OutOfBounds;
+            self.data[@intCast(p.y)][@intCast(p.x)] = value;
         }
 
         /// Basic BFS path find algorithm
         pub fn findPath(self: *Self, start: Point, end: Point, blocked: AutoHashMap(u64, Point)) ![]Point {
             var visited = AutoHashMap(u64, ?Point).init(self.allocator);
             defer visited.deinit();
+            try visited.put(start.key(), null);
             var queue = ArrayList(Point).init(self.allocator);
             defer queue.deinit();
             try queue.append(start);
-            try visited.put(start.key(), null);
             while (queue.items.len > 0) {
                 const current = queue.orderedRemove(0);
                 if (end.same(current)) {
                     var route = std.ArrayList(Point).init(self.allocator);
                     var step: ?Point = current;
-                    while (step != null) {
+                    while (step != null) : (step = visited.get(step.?.key()) orelse null) {
                         try route.append(step.?);
-                        step = visited.get(step.?.key()) orelse null;
                     }
                     return route.toOwnedSlice();
                 }
@@ -84,7 +83,7 @@ pub fn Grid(comptime T: type) type {
                     try queue.append(adjacent);
                 }
             }
-            return &[_]Point{};
+            return error.PathNotFound;
         }
     };
 }
@@ -93,7 +92,7 @@ test "Grid set and get integer" {
     const allocator = std.testing.allocator;
     var grid = try Grid(i32).init(allocator, 10, 10, 0);
     defer grid.deinit();
-    const xy: Point = .{ .x = 7, .y = 7 };
+    const xy = Point{ .x = 7, .y = 7 };
     try grid.set(xy, 777);
     try std.testing.expectEqual(777, try grid.get(xy));
 }
@@ -109,7 +108,7 @@ test "Grid string values" {
     const allocator = std.testing.allocator;
     var grid = try Grid([]const u8).init(allocator, 10, 10, "");
     defer grid.deinit();
-    const xy: Point = .{ .x = 7, .y = 7 };
+    const xy = Point{ .x = 7, .y = 7 };
     try grid.set(xy, "777");
     try std.testing.expectEqual("777", try grid.get(xy));
 }
@@ -119,7 +118,7 @@ test "Grid struct values" {
     const Boxed = struct { value: i32 };
     var grid = try Grid(Boxed).init(allocator, 10, 10, null);
     defer grid.deinit();
-    const xy: Point = .{ .x = 7, .y = 7 };
+    const xy = Point{ .x = 7, .y = 7 };
     const box = Boxed{ .value = 7 };
     try grid.set(xy, box);
     try std.testing.expectEqual(box, try grid.get(xy));

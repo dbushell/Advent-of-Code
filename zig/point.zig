@@ -30,8 +30,7 @@ pub const Point = struct {
 
     /// Return point coordinates: up, right, down, and left
     pub fn atAdjacent(a: Point) [4]Point {
-        const points = [4]Point{ a.atUp(), a.atRight(), a.atDown(), a.atLeft() };
-        return points;
+        return [4]Point{ a.atUp(), a.atRight(), a.atDown(), a.atLeft() };
     }
 
     /// Return point coordinates: top-left, top-right, bottom-right, and bottom-left

@@ -11,18 +11,6 @@ const input = std.fmt.parseInt(i32, inputText[0 .. inputText.len - 1], 10) catch
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-fn calc(p: Point) u21 {
-    const x = p.x;
-    const y = p.y;
-    var value: i32 = input;
-    value += (x * x) + (3 * x) + (2 * x * y) + y + (y * y);
-    var bits: i32 = 0;
-    for (0..32) |i| {
-        if ((value >> @as(u5, @intCast(i))) & 1 != 0) bits += 1;
-    }
-    return if (@mod(bits, 2) == 0) '.' else '#';
-}
-
 pub fn main() !void {
     var blocked = AutoHashMap(u64, Point).init(allocator);
     defer blocked.deinit();
@@ -34,16 +22,21 @@ pub fn main() !void {
     for (0..grid.height) |y| {
         for (0..grid.width) |x| {
             const p = Point{ .x = @intCast(x), .y = @intCast(y) };
-            const value: u21 = calc(p);
-            if (value == '#') try blocked.put(p.key(), p);
-            try grid.set(p, value);
+            const char: u21 = calc: {
+                const value = input + (p.x * p.x) + (3 * p.x) + (2 * p.x * p.y) + p.y + (p.y * p.y);
+                var bits: i32 = 0;
+                for (0..32) |i| bits += value >> @as(u5, @intCast(i)) & 1;
+                break :calc if (@mod(bits, 2) == 0) '.' else '#';
+            };
+            if (char == '#') try blocked.put(p.key(), p);
+            try grid.set(p, char);
         }
     }
 
     // Find path
-    const start = .{ .x = 1, .y = 1 };
-    const end = .{ .x = 31, .y = 39 };
-    const path = try grid.findPath(start, end, blocked);
+    const start = Point{ .x = 1, .y = 1 };
+    const end = Point{ .x = 31, .y = 39 };
+    const path = grid.findPath(start, end, blocked) catch &[_]Point{};
 
     // Draw grid with path
     for (path) |p| try grid.set(p, '•');
@@ -68,5 +61,5 @@ pub fn main() !void {
         std.debug.print("\n", .{});
     }
 
-    std.debug.print("Answer 1: {d}\n", .{path.len - 1});
+    std.debug.print("Answer 1: {d}\n", .{if (path.len > 0) path.len - 1 else 0});
 }

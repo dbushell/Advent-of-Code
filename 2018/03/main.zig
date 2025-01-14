@@ -4,14 +4,15 @@ const splitScalar = std.mem.splitScalar;
 
 const Claim = struct { id: i32, x: usize, y: usize, width: usize, height: usize };
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
+const input = @embedFile("input.txt");
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
+
+pub fn main() !void {
     var claims = std.ArrayList(Claim).init(allocator);
     defer claims.deinit();
 
-    const input = @embedFile("input.txt");
     var tokens = std.mem.tokenizeScalar(u8, input, '\n');
     while (tokens.next()) |line| {
         if (!std.mem.startsWith(u8, line, "#")) continue;
@@ -31,24 +32,12 @@ pub fn main() !void {
     }
 
     var fabric: [1000][1000]i32 = undefined;
-    for (0..fabric.len) |y| {
-        for (0..fabric[y].len) |x| fabric[y][x] = 0;
-    }
+    for (0..1000) |y| fabric[y] = .{0} ** 1000;
 
-    // std.debug.print("{d}\n", .{claims.items.len});
-
-    // var multiple = std.StringHashMap(bool).init(allocator);
-    // try multiple.ensureTotalCapacity(32 * 500_000);
-    // defer multiple.deinit();
-    // var buffer: [32]u8 = undefined;
     for (claims.items) |claim| {
         for (claim.y..claim.y + claim.height) |y| {
             for (claim.x..claim.x + claim.width) |x| {
                 fabric[y][x] = fabric[y][x] + 1;
-                // if (fabric[y][x] >= 2) {
-                //     const key = try std.fmt.bufPrint(&buffer, "{any},{any}", .{ x, y });
-                //     try multiple.put(key, true);
-                // }
             }
         }
     }
@@ -60,18 +49,14 @@ pub fn main() !void {
         }
     }
 
-    const answer_two: i32 = for (claims.items) |claim| {
-        var next = false;
+    const answer_two: i32 = outer: for (claims.items) |claim| {
         for (claim.y..claim.y + claim.height) |y| {
             for (claim.x..claim.x + claim.width) |x| {
                 if (fabric[y][x] >= 2) {
-                    next = true;
-                    break;
+                    continue :outer;
                 }
             }
-            if (next) break;
         }
-        if (next) continue;
         break claim.id;
     } else 0;
 
