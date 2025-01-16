@@ -4,6 +4,7 @@ const inputText = @embedFile("input.txt");
 const input = std.fmt.parseInt(i32, inputText[0 .. inputText.len - 1], 10) catch 0;
 
 var power_levels: [301][301]?i32 = undefined;
+var sum_table: [301][301]?i32 = undefined;
 
 fn powerLevel(x: i32, y: i32, serial: ?i32) i32 {
     return power_levels[@intCast(y)][@intCast(x)] orelse calc: {
@@ -18,27 +19,34 @@ fn powerLevel(x: i32, y: i32, serial: ?i32) i32 {
     };
 }
 
-fn sumLevel(x1: i32, y1: i32, x2: i32, y2: i32) i32 {
-    var total: i32 = 0;
-    for (@intCast(y1)..@intCast(y2)) |y| {
-        for (@intCast(x1)..@intCast(x2)) |x| {
-            total += powerLevel(@intCast(x), @intCast(y), null);
-        }
-    }
-    return total;
+fn sumLevel(x1: usize, y1: usize, x2: usize, y2: usize) i32 {
+    return sum_table[y1][x1].? +
+        sum_table[y2][x2].? -
+        sum_table[y1][x2].? -
+        sum_table[y2][x1].?;
 }
 
 pub fn main() !void {
-    var best_point = [2]i32{ 0, 0 };
-    var best_power: i32 = undefined;
-    for (1..299) |y| {
-        for (1..299) |x| {
+    for (1..301) |y| {
+        for (1..301) |x| {
             const px: i32 = @intCast(x);
             const py: i32 = @intCast(y);
-            const power = sumLevel(px, py, px + 3, py + 3);
+            var level = powerLevel(px, py, null);
+            level += sum_table[y][x - 1] orelse 0;
+            level += sum_table[y - 1][x] orelse 0;
+            level -= sum_table[y - 1][x - 1] orelse 0;
+            sum_table[y][x] = level;
+        }
+    }
+
+    var best_point = [2]i32{ 0, 0 };
+    var best_power: i32 = undefined;
+    for (1..298) |y| {
+        for (1..298) |x| {
+            const power = sumLevel(x, y, x + 3, y + 3);
             if (power > best_power) {
-                best_point[0] = px;
-                best_point[1] = py;
+                best_point[0] = @as(i32, @intCast(x)) + 1;
+                best_point[1] = @as(i32, @intCast(y)) + 1;
                 best_power = power;
             }
         }
@@ -49,16 +57,12 @@ pub fn main() !void {
     best_power = undefined;
     for (1..291) |y| {
         for (1..291) |x| {
-            const px: i32 = @intCast(x);
-            const py: i32 = @intCast(y);
-            // Assume best size is below 30
-            const max_size: usize = @min(30, @min(300 - x, 300 - y));
+            const max_size: usize = @min(300 - x, 300 - y);
             for (3..(max_size + 1)) |size| {
-                const ps: i32 = @intCast(size);
-                const power = sumLevel(px, py, px + ps, py + ps);
+                const power = sumLevel(x, y, x + size, y + size);
                 if (power > best_power) {
-                    best_point[0] = px;
-                    best_point[1] = py;
+                    best_point[0] = @as(i32, @intCast(x)) + 1;
+                    best_point[1] = @as(i32, @intCast(y)) + 1;
                     best_power = power;
                     best_size = size;
                 }
