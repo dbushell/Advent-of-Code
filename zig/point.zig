@@ -64,9 +64,22 @@ pub const Point = struct {
         return @as(u64, @as(u32, @bitCast(a.y))) << 32 | @as(u32, @bitCast(a.x));
     }
 
+    /// Format "x,y" format
+    pub fn format(xy: Point, buf: []u8) []u8 {
+        var xbuf: [8]u8 = undefined;
+        var ybuf: [8]u8 = undefined;
+        const xlen = std.fmt.formatIntBuf(&xbuf, xy.x, 10, .lower, .{});
+        const ylen = std.fmt.formatIntBuf(&ybuf, xy.y, 10, .lower, .{});
+        return std.fmt.bufPrint(buf, "{s},{s}", .{ xbuf[0..xlen], ybuf[0..ylen] }) catch {
+            std.mem.copyForwards(u8, buf, "x,y");
+            return buf[0..3];
+        };
+    }
+
     /// Debug print "x,y" format
     pub fn print(xy: Point) void {
-        std.debug.print("{d},{d}\n", .{ xy.x, xy.y });
+        var buf: [32]u8 = undefined;
+        std.debug.print("{s}\n", .{xy.format(&buf)});
     }
 };
 

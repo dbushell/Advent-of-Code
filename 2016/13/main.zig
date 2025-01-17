@@ -2,8 +2,8 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const AutoHashMap = std.AutoHashMap;
 const Allocator = std.mem.Allocator;
-const Point = @import("./point.zig").Point;
-const Grid = @import("./grid.zig").Grid;
+const Point = @import("./src/point.zig").Point;
+const Grid = @import("./src/grid.zig").Grid;
 
 const inputText = @embedFile("input.txt");
 const input = std.fmt.parseInt(i32, inputText[0 .. inputText.len - 1], 10) catch 0;
