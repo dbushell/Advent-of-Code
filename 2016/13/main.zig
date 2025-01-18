@@ -12,7 +12,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
 pub fn main() !void {
-    var blocked = AutoHashMap(u64, Point).init(allocator);
+    var blocked = AutoHashMap(u64, bool).init(allocator);
     defer blocked.deinit();
 
     var grid = try Grid(u21).init(allocator, 45, 45, null);
@@ -28,7 +28,7 @@ pub fn main() !void {
                 for (0..32) |i| bits += value >> @as(u5, @intCast(i)) & 1;
                 break :calc if (@mod(bits, 2) == 0) '.' else '#';
             };
-            if (char == '#') try blocked.put(p.key(), p);
+            if (char == '#') try blocked.put(p.key(), true);
             try grid.set(p, char);
         }
     }

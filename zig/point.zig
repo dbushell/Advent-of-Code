@@ -28,19 +28,19 @@ pub const Point = struct {
         return Point.init(a.x + 1, a.y);
     }
 
-    /// Return point coordinates: up, right, down, and left
+    /// Return point coordinates: up, left, right, and down
     pub fn atAdjacent(a: Point) [4]Point {
-        return [4]Point{ a.atUp(), a.atRight(), a.atDown(), a.atLeft() };
+        return [4]Point{ a.atUp(), a.atLeft(), a.atRight(), a.atDown() };
     }
 
-    /// Return point coordinates: top-left, top-right, bottom-right, and bottom-left
+    /// Return point coordinates: top-left, top-right, bottom-left, and bottom-right
     pub fn atCorners(a: Point) [4]Point {
-        const points = [4]Point{};
-        points[0] = Point.init(a.x - 1, a.y - 1);
-        points[1] = Point.init(a.x + 1, a.y - 1);
-        points[2] = Point.init(a.x + 1, a.y + 1);
-        points[3] = Point.init(a.x - 1, a.y + 1);
-        return points;
+        return [4]Point{
+            Point.init(a.x - 1, a.y - 1),
+            Point.init(a.x + 1, a.y - 1),
+            Point.init(a.x - 1, a.y + 1),
+            Point.init(a.x + 1, a.y + 1),
+        };
     }
 
     /// Returns -1 if point `a` is before `b`, `1` if after, or `0` if same
