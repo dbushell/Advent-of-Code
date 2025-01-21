@@ -8,6 +8,11 @@ pub const Point = struct {
         return Point{ .x = x, .y = y };
     }
 
+    /// Return identical point
+    pub fn clone(a: Point) Point {
+        return Point.init(a.x, a.y);
+    }
+
     /// Returns point above
     pub fn atUp(a: Point) Point {
         return Point.init(a.x, a.y - 1);

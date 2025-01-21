@@ -4,7 +4,7 @@ const AutoHashMap = std.AutoHashMap;
 const Allocator = std.mem.Allocator;
 const Point = @import("./point.zig").Point;
 
-const GridError = error{ OutOfBounds, PathNotFound };
+pub const GridError = error{ OutOfBounds, PathNotFound };
 
 pub fn Grid(comptime T: type) type {
     return struct {
