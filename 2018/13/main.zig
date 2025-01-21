@@ -6,7 +6,7 @@ const Allocator = std.mem.Allocator;
 const Point = @import("./src/point.zig").Point;
 const Grid = @import("./src/grid.zig").Grid;
 
-const inputText = @embedFile("input.txt");
+const input = @embedFile("input.txt");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
@@ -45,8 +45,8 @@ const Cart = struct {
 };
 
 pub fn main() !void {
-    const width = std.mem.indexOf(u8, inputText, "\n") orelse 0;
-    const height = std.mem.count(u8, inputText, "\n");
+    const width = std.mem.indexOf(u8, input, "\n") orelse 0;
+    const height = std.mem.count(u8, input, "\n");
 
     var grid = try Grid(u8).init(allocator, width, height, null);
     defer grid.deinit();
@@ -56,7 +56,7 @@ pub fn main() !void {
 
     var ly: i32 = 0;
     var id: u32 = 0;
-    var lines = std.mem.tokenizeScalar(u8, inputText, '\n');
+    var lines = std.mem.tokenizeScalar(u8, input, '\n');
     while (lines.next()) |line| : (ly += 1) {
         if (line.len != width) break;
         for (0..line.len) |x| {

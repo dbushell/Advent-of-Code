@@ -8,7 +8,7 @@ const Point = @import("./src/point.zig").Point;
 const Grid = @import("./src/grid.zig").Grid;
 const GridError = @import("./src/grid.zig").GridError;
 
-const inputText = @embedFile("input.txt");
+const input = @embedFile("input.txt");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
@@ -139,7 +139,7 @@ pub fn main() !void {
 }
 
 fn parseInput(data: *ArrayList([4]usize)) void {
-    var lines = std.mem.splitScalar(u8, inputText, '\n');
+    var lines = std.mem.splitScalar(u8, input, '\n');
     while (lines.next()) |line| {
         if (line.len == 0) continue;
         var chars = std.mem.tokenizeAny(u8, line, "xy=, ..");

@@ -11,7 +11,7 @@ const Grid = @import("./src/grid.zig").Grid;
 const Blocked = std.AutoHashMap(u64, bool);
 const UnitList = std.ArrayList(Unit);
 
-const inputText = @embedFile("input.txt");
+const input = @embedFile("input.txt");
 
 const Species = enum(u8) {
     goblin = 'G',
@@ -120,7 +120,7 @@ fn reset(grid: *Grid(u8), blocked: *Blocked, units: *UnitList) !void {
     units.clearRetainingCapacity();
     var ly: i32 = 0;
     var unit_id: u16 = 0;
-    var lines = std.mem.tokenizeScalar(u8, inputText, '\n');
+    var lines = std.mem.tokenizeScalar(u8, input, '\n');
     while (lines.next()) |line| : (ly += 1) {
         if (line.len != grid.width) break;
         for (0..line.len) |x| {
@@ -150,8 +150,8 @@ pub fn main() !void {
         break :allocate std.heap.c_allocator;
     };
 
-    const width = std.mem.indexOf(u8, inputText, "\n") orelse 0;
-    const height = std.mem.count(u8, inputText, "\n");
+    const width = std.mem.indexOf(u8, input, "\n") orelse 0;
+    const height = std.mem.count(u8, input, "\n");
 
     var grid = try Grid(u8).init(allocator, width, height, null);
     defer grid.deinit();

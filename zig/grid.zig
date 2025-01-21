@@ -36,6 +36,13 @@ pub fn Grid(comptime T: type) type {
             self.allocator.free(self.data);
         }
 
+        /// Returns a new grid by duplicating memory
+        pub fn clone(self: Self) !Self {
+            const grid = try Self.init(self.allocator, self.width, self.height, null);
+            for (0..self.height) |y| @memcpy(grid.data[y], self.data[y]);
+            return grid;
+        }
+
         /// Returns true if point is valid
         pub fn inBounds(self: Self, p: Point) bool {
             if (p.x < 0 or p.x >= self.width) return false;

@@ -1,8 +1,8 @@
 const std = @import("std");
 const print = std.debug.print;
 
-const inputText = @embedFile("input.txt");
-const input = std.fmt.parseInt(i32, inputText[0 .. inputText.len - 1], 10) catch 0;
+const input_text = @embedFile("input.txt");
+const input = std.fmt.parseInt(i32, input_text[0 .. input_text.len - 1], 10) catch 0;
 
 fn next(buf: []u8, length: usize, e1: *usize, e2: *usize) usize {
     var index = length;

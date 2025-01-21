@@ -5,7 +5,7 @@ const print = std.debug.print;
 const ArrayList = std.ArrayList;
 const AutoHashMap = std.AutoHashMap;
 
-const inputText = @embedFile("input.txt");
+const input = @embedFile("input.txt");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
@@ -144,7 +144,7 @@ const Parser = enum { unknown, before, instruction, after, program };
 fn parseInput(list: *ArrayList(Capture), program: *ArrayList([4]u16)) void {
     var state = Parser.unknown;
     var capture = Capture{ .before = .{0} ** 4, .after = .{0} ** 4, .instruction = .{0} ** 4 };
-    var lines = splitScalar(u8, inputText, '\n');
+    var lines = splitScalar(u8, input, '\n');
     while (lines.next()) |line| {
         if (startsWith(u8, line, "Before:")) {
             state = Parser.before;

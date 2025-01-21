@@ -1,7 +1,7 @@
 const std = @import("std");
 
-const inputText = @embedFile("input.txt");
-const input = std.fmt.parseInt(i32, inputText[0 .. inputText.len - 1], 10) catch 0;
+const input_text = @embedFile("input.txt");
+const input = std.fmt.parseInt(i32, input_text[0 .. input_text.len - 1], 10) catch 0;
 
 var power_levels: [301][301]?i32 = undefined;
 var sum_table: [301][301]?i32 = undefined;
