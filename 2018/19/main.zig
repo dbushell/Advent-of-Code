@@ -8,9 +8,9 @@ const input = @embedFile("input.txt");
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
 
-const Program = struct { ip: usize, instructions: ArrayList([4]u16) };
+pub const Program = struct { ip: usize, instructions: ArrayList([4]u32) };
 
-const Opcode = enum {
+pub const Opcode = enum {
     addr,
     addi,
     mulr,
@@ -35,7 +35,7 @@ const Opcode = enum {
     }
 };
 
-fn execute(opcode: Opcode, instruction: [4]u16, register: *[6]u64) void {
+pub fn execute(opcode: Opcode, instruction: [4]u32, register: *[6]u64) void {
     const A = instruction[1];
     const B = instruction[2];
     const C = instruction[3];
@@ -119,10 +119,10 @@ const startsWith = std.mem.startsWith;
 const splitScalar = std.mem.splitScalar;
 
 // Yolo parse the input with no error checks
-fn parseInput() Program {
+pub fn parseInput() Program {
     var program = Program{
         .ip = 0,
-        .instructions = ArrayList([4]u16).init(allocator),
+        .instructions = ArrayList([4]u32).init(allocator),
     };
     var lines = splitScalar(u8, input, '\n');
     while (lines.next()) |line| {
@@ -134,9 +134,9 @@ fn parseInput() Program {
         var numbers = splitScalar(u8, line, ' ');
         program.instructions.append(.{
             Opcode.match(numbers.next().?).?,
-            parseInt(u16, numbers.next().?, 10) catch unreachable,
-            parseInt(u16, numbers.next().?, 10) catch unreachable,
-            parseInt(u16, numbers.next().?, 10) catch unreachable,
+            parseInt(u32, numbers.next().?, 10) catch unreachable,
+            parseInt(u32, numbers.next().?, 10) catch unreachable,
+            parseInt(u32, numbers.next().?, 10) catch unreachable,
         }) catch unreachable;
     }
     return program;
