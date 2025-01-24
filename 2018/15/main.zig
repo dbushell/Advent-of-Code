@@ -8,7 +8,7 @@ const Allocator = std.mem.Allocator;
 const Point = @import("./src/point.zig").Point;
 const Grid = @import("./src/grid.zig").Grid;
 
-const Blocked = std.AutoHashMap(u64, bool);
+const Blocked = std.AutoHashMap(u64, void);
 const UnitList = std.ArrayList(Unit);
 
 const input = @embedFile("input.txt");
@@ -130,9 +130,9 @@ fn reset(grid: *Grid(u8), blocked: *Blocked, units: *UnitList) !void {
                 try units.append(.{ .allocator = grid.allocator, .species = species, .point = point, .id = unit_id });
                 unit_id += 1;
                 char = '.';
-                try blocked.put(point.key(), true);
+                try blocked.put(point.key(), {});
             } else if (char == '#') {
-                try blocked.put(point.key(), true);
+                try blocked.put(point.key(), {});
             }
             try grid.set(point, char);
         }
@@ -194,7 +194,7 @@ pub fn main() !void {
                     if (unit.move_target(units, grid, blocked)) |move| {
                         _ = blocked.remove(unit.point.key());
                         unit.point = move;
-                        try blocked.put(unit.point.key(), true);
+                        try blocked.put(unit.point.key(), {});
                         maybe_attack = unit.attack_target(units);
                     }
                 }

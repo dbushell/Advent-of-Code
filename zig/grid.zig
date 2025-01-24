@@ -68,7 +68,7 @@ pub fn Grid(comptime T: type) type {
         }
 
         /// Basic BFS path find algorithm
-        pub fn findPath(self: Self, start: Point, end: Point, blocked: AutoHashMap(u64, bool)) ![]Point {
+        pub fn findPath(self: Self, start: Point, end: Point, blocked: AutoHashMap(u64, void)) ![]Point {
             var visited = AutoHashMap(u64, ?Point).init(self.allocator);
             defer visited.deinit();
             try visited.put(start.key(), null);
@@ -141,10 +141,10 @@ test "Grid path find" {
     const allocator = std.testing.allocator;
     var grid = try Grid(i32).init(allocator, 10, 10, 0);
     defer grid.deinit();
-    var blocked = std.AutoHashMap(u64, bool).init(allocator);
+    var blocked = std.AutoHashMap(u64, void).init(allocator);
     defer blocked.deinit();
-    try blocked.put((Point{ .x = 1, .y = 0 }).key(), true);
-    try blocked.put((Point{ .x = 9, .y = 8 }).key(), true);
+    try blocked.put((Point{ .x = 1, .y = 0 }).key(), {});
+    try blocked.put((Point{ .x = 9, .y = 8 }).key(), {});
     const path: ?[]Point = grid.findPath(.{ .x = 0, .y = 0 }, .{ .x = 9, .y = 9 }, blocked) catch null;
     try std.testing.expect(path != null);
     try std.testing.expectEqual(19, path.?.len);
