@@ -64,9 +64,31 @@ pub const Point = struct {
         return @abs(a.x - b.x) + @abs(a.y - b.y);
     }
 
+    /// Rotate `a` around `b` by degrees
+    pub fn rotate(a: Point, b: ?Point, deg: f64) Point {
+        // Based on https://en.wikipedia.org/wiki/Rotation_of_axes_in_two_dimensions
+        // Based on https://stackoverflow.com/a/17411276
+        const rad: f64 = -std.math.rad_per_deg * deg;
+        const cos: f64 = @cos(rad);
+        const sin: f64 = @sin(rad);
+        const ax: f64 = @floatFromInt(a.x);
+        const ay: f64 = @floatFromInt(a.y);
+        const bx: f64 = if (b) |c| @floatFromInt(c.x) else 0.0;
+        const by: f64 = if (b) |c| @floatFromInt(c.y) else 0.0;
+        return Point{
+            .x = @intFromFloat(@round((cos * (ax - bx)) + (sin * (ay - by))) + bx),
+            .y = @intFromFloat(@round((cos * (ay - by)) - (sin * (ax - bx))) + by),
+        };
+    }
+
     /// Returns unique hash key for point
     pub fn key(a: Point) u64 {
         return @as(u64, @as(u32, @bitCast(a.y))) << 32 | @as(u32, @bitCast(a.x));
+    }
+
+    /// Return anonymous struct with `x` and `y` integers
+    pub fn destruct(a: Point) struct { i32, i32 } {
+        return .{ a.x, a.y };
     }
 
     /// Format "x,y" format
@@ -102,4 +124,10 @@ test "Point comparison" {
     try std.testing.expect(a.same(b) == false);
     try std.testing.expectEqual(-1, a.compare(b));
     try std.testing.expectEqual(1, b.compare(a));
+}
+
+test "Point rotation" {
+    const a = Point.init(7, 7);
+    const b = Point.init(-7, 7);
+    try std.testing.expect(b.same(a.rotate(null, 90)));
 }

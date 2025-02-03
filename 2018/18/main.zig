@@ -131,7 +131,7 @@ fn parseInput(grid: *Grid(Char)) void {
         if (line.len != grid.width) break;
         for (0..line.len) |x| {
             const char: Char = @enumFromInt(line[x]);
-            const point = Point.init(@intCast(x), @intCast(y));
+            const point = Point.init(@intCast(x), y);
             grid.set(point, char) catch unreachable;
         }
     }
