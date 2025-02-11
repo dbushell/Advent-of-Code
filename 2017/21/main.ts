@@ -19,7 +19,7 @@ const patterns: Array<[Grid, Grid]> = inputText.trim().split("\n").map((line) =>
   ) as [Grid, Grid]
 );
 
-// Rotate 90deg clocksize
+// Rotate 90deg clockwise
 const rotate = (grid: Grid) =>
   grid[0].map((_, i) => grid.map((row) => row[i]).reverse());
 

@@ -6,63 +6,62 @@ const AutoArrayHashMap = std.AutoArrayHashMap;
 
 const input = @embedFile("input.txt");
 
-const State = AutoArrayHashMap(u64, Point);
+const Vec4 = @Vector(4, i32);
+const State = AutoArrayHashMap(Vec4, Point);
 
-const Point = struct {
-    active: bool = false,
-    key: u64 = 0,
-    x: i32,
-    y: i32,
-    z: i32,
-    w: i32,
-
-    fn init(x: i32, y: i32, z: i32, w: i32) Point {
-        var xyz = Point{ .x = x, .y = y, .z = z, .w = w };
-        xyz.key = xyz.hash();
-        return xyz;
-    }
-
-    fn hash(self: Point) u64 {
-        var buf: [32]u8 = undefined;
-        const slice = std.fmt.bufPrint(&buf, "{d},{d},{d},{d}", .{ self.x, self.y, self.z, self.w }) catch unreachable;
-        return std.hash.XxHash3.hash(0, slice);
-    }
-
-    /// Return surrounding coordinates in 4 dimensions
-    fn neighbours(self: Point) [80]Point {
-        var list: [80]Point = undefined;
-        var i: usize = 0;
-        for (0..3) |uw| {
-            const w: i32 = self.w + @as(i32, @intCast(uw)) - 1;
-            for (0..3) |uz| {
-                const z: i32 = self.z + @as(i32, @intCast(uz)) - 1;
-                for (0..3) |uy| {
-                    const y: i32 = self.y + @as(i32, @intCast(uy)) - 1;
-                    for (0..3) |ux| {
-                        const x: i32 = self.x + @as(i32, @intCast(ux)) - 1;
-                        if (x == self.x and y == self.y and z == self.z and w == self.w) continue;
-                        list[i] = Point.init(x, y, z, w);
-                        i += 1;
-                    }
+/// Iterate from min (inclusive) to max (exclusive)
+fn iterate4D(
+    min: Vec4,
+    max: Vec4,
+    context: anytype,
+    comptime callbackFn: fn (@TypeOf(context), i: Vec4) void,
+) void {
+    var i = min;
+    while (i[3] < max[3]) : (i[3] += 1) {
+        i[2] = min[2];
+        while (i[2] < max[2]) : (i[2] += 1) {
+            i[1] = min[1];
+            while (i[1] < max[1]) : (i[1] += 1) {
+                i[0] = min[0];
+                while (i[0] < max[0]) : (i[0] += 1) {
+                    callbackFn(context, i);
                 }
             }
         }
+    }
+}
+
+/// 4D vector with state
+const Point = struct {
+    active: bool = false,
+    v: Vec4,
+
+    /// Return surrounding coordinates in four dimensions
+    fn neighbours(self: Point) [80]Point {
+        var list: [80]Point = undefined;
+        var index: usize = 0;
+        const min: Vec4 = self.v - Vec4{ 1, 1, 1, 1 };
+        const max: Vec4 = self.v + Vec4{ 2, 2, 2, 2 };
+        iterate4D(min, max, .{ &list, &index, self.v }, struct {
+            fn callbackFn(ctx: struct { *[80]Point, *usize, Vec4 }, i: Vec4) void {
+                if (std.meta.eql(i, ctx[2])) return;
+                ctx[0][ctx[1].*] = Point{ .v = i };
+                ctx[1].* += 1;
+            }
+        }.callbackFn);
         return list;
     }
 
+    /// Update state based on active neighbours
     fn nextState(self: *Point, state: *State) void {
         // Total active neighbours
         var count: usize = 0;
         for (self.neighbours()) |a| {
-            if (state.get(a.key)) |b| count += if (b.active) 1 else 0;
+            if (state.get(a.v)) |b| count += if (b.active) 1 else 0;
         }
-        // Existing or new coordinate?
-        if (state.get(self.key)) |current| {
-            if (current.active) {
-                self.active = count == 2 or count == 3;
-            } else {
-                self.active = count == 3;
-            }
+        // Existing or new coordinate
+        if (state.get(self.v)) |current| {
+            self.active = if (current.active) (count == 2 or count == 3) else count == 3;
         } else {
             self.active = count == 3;
         }
@@ -72,37 +71,23 @@ const Point = struct {
 fn nextState(state: *State, dimensions: u8) !State {
     defer state.deinit();
     var next = State.init(state.allocator);
-    var min = Point{ .x = 0, .y = 0, .z = 0, .w = 0 };
-    var max = Point{ .x = 0, .y = 0, .z = 0, .w = 0 };
+    var min: Vec4 = .{ 0, 0, 0, 0 };
+    var max: Vec4 = .{ 0, 0, 0, 0 };
     for (state.values()) |xyz| {
-        min.x = @min(min.x, xyz.x - 1);
-        min.y = @min(min.y, xyz.y - 1);
-        min.z = @min(min.z, xyz.z - 1);
-        min.w = @min(min.w, xyz.w - 1);
-        max.x = @max(max.x, xyz.x + 2);
-        max.y = @max(max.y, xyz.y + 2);
-        max.z = @max(max.z, xyz.z + 2);
-        max.w = @max(max.w, xyz.w + 2);
+        min = @min(min, xyz.v + Vec4{ -1, -1, -1, -1 });
+        max = @max(max, xyz.v + Vec4{ 2, 2, 2, 2 });
     }
     if (dimensions != 4) {
-        min.w = 0;
-        max.w = 1;
+        min[3] = 0;
+        max[3] = 1;
     }
-    var i = Point{ .x = min.x, .y = min.y, .z = min.z, .w = min.w };
-    while (i.w < max.w) : (i.w += 1) {
-        i.z = min.z;
-        while (i.z < max.z) : (i.z += 1) {
-            i.y = min.y;
-            while (i.y < max.y) : (i.y += 1) {
-                i.x = min.x;
-                while (i.x < max.x) : (i.x += 1) {
-                    var new = Point.init(i.x, i.y, i.z, i.w);
-                    new.nextState(state);
-                    try next.put(new.key, new);
-                }
-            }
+    iterate4D(min, max, .{ state, &next }, struct {
+        fn callbackFn(ctx: struct { *State, *State }, i: Vec4) void {
+            var new = Point{ .v = i };
+            new.nextState(ctx[0]);
+            ctx[1].put(new.v, new) catch unreachable;
         }
-    }
+    }.callbackFn);
     return next;
 }
 
@@ -134,9 +119,9 @@ fn parseInput(state: *State) !void {
     while (lines.next()) |line| : (y += 1) {
         if (line.len == 0) continue;
         for (0..line.len) |x| {
-            var xyz = Point.init(@intCast(x), @intCast(y), 0, 0);
+            var xyz = Point{ .v = .{ @intCast(x), @intCast(y), 0, 0 } };
             xyz.active = line[x] == '#';
-            try state.put(xyz.key, xyz);
+            try state.put(xyz.v, xyz);
         }
     }
 }

@@ -4,7 +4,7 @@ const AutoHashMap = std.AutoHashMap;
 const Allocator = std.mem.Allocator;
 const Point = @import("./point.zig").Point;
 
-pub const GridError = error{ OutOfBounds, PathNotFound };
+pub const GridError = error{ NotSquare, OutOfBounds, PathNotFound };
 
 pub fn Grid(comptime T: type) type {
     return struct {
@@ -65,6 +65,21 @@ pub fn Grid(comptime T: type) type {
         pub fn set(self: *Self, p: Point, value: T) GridError!void {
             if (!self.inBounds(p)) return error.OutOfBounds;
             self.data[@intCast(p.y)][@intCast(p.x)] = value;
+        }
+
+        /// Flip horizontal axis
+        pub fn flip(self: *Self) void {
+            for (0..self.height) |y| std.mem.reverse(T, self.data[y]);
+        }
+
+        /// Rotate 90deg clockwise
+        pub fn rotate(self: *Self) !void {
+            if (self.width != self.height) return error.NotSquare;
+            const state = try self.clone();
+            defer state.deinit();
+            for (0..self.width) |y| for (0..self.width) |x| {
+                self.data[x][self.width - y - 1] = state.data[y][x];
+            };
         }
 
         /// Basic BFS path find algorithm

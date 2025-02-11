@@ -111,7 +111,7 @@ pub fn main() !void {
         }
     }
 
-    const zero = Node.find(nodes, 0).?;
+    const n0 = Node.find(nodes, 0).?;
     const n8 = Node.find(nodes, 8).?;
     const n42 = Node.find(nodes, 42).?;
     const n31 = Node.find(nodes, 31).?;
@@ -122,7 +122,7 @@ pub fn main() !void {
 
     var matches: usize = 0;
     next_message: for (messages.items) |msg| {
-        for (zero.list.items) |z| {
+        for (n0.list.items) |z| {
             if (eql(u8, z, msg)) {
                 matches += 1;
                 try seen.put(msg, {});
@@ -138,7 +138,7 @@ pub fn main() !void {
     next_message: while (missed_index < missed.items.len) : (missed_index += 1) {
         const msg = missed.items[missed_index];
         if (seen.contains(msg[1])) continue;
-        for (zero.list.items) |z| {
+        for (n0.list.items) |z| {
             if (eql(u8, z, msg[0])) {
                 matches += 1;
                 try seen.put(msg[1], {});
