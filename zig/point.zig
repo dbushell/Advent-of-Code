@@ -92,21 +92,19 @@ pub const Point = struct {
     }
 
     /// Format "x,y" format
-    pub fn format(xy: Point, buf: []u8) []u8 {
-        var xbuf: [8]u8 = undefined;
-        var ybuf: [8]u8 = undefined;
-        const xlen = std.fmt.formatIntBuf(&xbuf, xy.x, 10, .lower, .{});
-        const ylen = std.fmt.formatIntBuf(&ybuf, xy.y, 10, .lower, .{});
-        return std.fmt.bufPrint(buf, "{s},{s}", .{ xbuf[0..xlen], ybuf[0..ylen] }) catch {
-            std.mem.copyForwards(u8, buf, "x,y");
-            return buf[0..3];
-        };
+    pub fn format(xy: Point, comptime fmt: []const u8, _: std.fmt.FormatOptions, writer: anytype) @TypeOf(writer).Error!void {
+        try writer.print(
+            if (fmt.len == 0) "{d},{d}" else fmt,
+            .{ xy.x, xy.y },
+        );
     }
 
     /// Debug print "x,y" format
     pub fn print(xy: Point) void {
-        var buf: [32]u8 = undefined;
-        std.debug.print("{s}\n", .{xy.format(&buf)});
+        std.Progress.lockStdErr();
+        defer std.Progress.unlockStdErr();
+        const stderr = std.io.getStdErr().writer();
+        xy.format("{d},{d}\n", .{}, stderr) catch unreachable;
     }
 };
 

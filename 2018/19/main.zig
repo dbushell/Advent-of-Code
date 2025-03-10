@@ -29,7 +29,7 @@ pub const Opcode = enum {
     eqrr,
 
     fn match(name: []const u8) ?u16 {
-        inline for (@typeInfo(Opcode).Enum.fields) |field|
+        inline for (std.meta.fields(Opcode)) |field|
             if (std.mem.eql(u8, name, field.name)) return field.value;
         return null;
     }

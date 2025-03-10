@@ -62,7 +62,7 @@ fn execute(opcode: Opcode, instruction: [4]u16, register: *[4]u16) void {
 pub fn main() !void {
     defer _ = gpa.detectLeaks();
 
-    const opcode_len = @typeInfo(Opcode).Enum.fields.len;
+    const opcode_len = @typeInfo(Opcode).@"enum".fields.len;
 
     Opcode.map = AutoHashMap(i32, Opcode).init(allocator);
     defer Opcode.map.deinit();

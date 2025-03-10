@@ -104,7 +104,8 @@ pub fn main() !void {
                     if (crashed == false) {
                         crashed = true;
                         var buf: [32]u8 = undefined;
-                        print("Answer 1: {s}\n", .{c1.?.next.?.format(&buf)});
+                        const slice = try std.fmt.bufPrint(&buf, "{any}", .{c1.?.next.?});
+                        print("Answer 1: {s}\n", .{slice});
                     }
                     assert(cartMap.remove(c1.?.point.key()));
                     assert(cartMap.remove(c2.?.point.key()));
@@ -146,7 +147,8 @@ pub fn main() !void {
             cart_iter = cartMap.valueIterator();
             const cart = cart_iter.next().?;
             var buf: [32]u8 = undefined;
-            print("Answer 2: {s}\n", .{cart.point.format(&buf)});
+            const slice = try std.fmt.bufPrint(&buf, "{any}", .{cart.point});
+            print("Answer 2: {s}\n", .{slice});
             break;
         }
     }

@@ -18,7 +18,7 @@ const Species = enum(u8) {
     elf = 'E',
 
     fn match(value: u8) ?Species {
-        inline for (@typeInfo(Species).Enum.fields) |field|
+        inline for (std.meta.fields(Species)) |field|
             if (value == field.value) return @enumFromInt(field.value);
         return null;
     }

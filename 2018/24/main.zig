@@ -19,12 +19,6 @@ pub const Element = enum {
     none,
     radiation,
     slashing,
-
-    fn match(name: []const u8) ?Element {
-        inline for (@typeInfo(Element).Enum.fields) |field|
-            if (std.mem.eql(u8, name, field.name)) return @enumFromInt(field.value);
-        return null;
-    }
 };
 
 pub fn main() !void {
@@ -116,6 +110,7 @@ const parseInt = std.fmt.parseInt;
 const splitScalar = std.mem.splitScalar;
 const splitSequence = std.mem.splitSequence;
 const startsWith = std.mem.startsWith;
+const stringToEnum = std.meta.stringToEnum;
 
 fn parseInput(immune: *Army, infection: *Army) !void {
     var lines = splitScalar(u8, input, '\n');
@@ -156,7 +151,8 @@ fn parseInput(immune: *Army, infection: *Army) !void {
                     continue;
                 }
                 if (elements == null) continue;
-                if (Element.match(word)) |e| elements.?.insert(e);
+
+                if (stringToEnum(Element, word)) |e| elements.?.insert(e);
             }
         } else {
             _ = p3.next();
@@ -164,7 +160,7 @@ fn parseInput(immune: *Army, infection: *Army) !void {
         // Attack
         var p5 = splitScalar(u8, p3.next().?, ' ');
         group.damage = try parseInt(i32, p5.next().?, 10);
-        group.element = Element.match(p5.next().?).?;
+        group.element = stringToEnum(Element, p5.next().?).?;
         // Initiative
         var last: []const u8 = undefined;
         while (p5.peek() != null) last = p5.next().?;
