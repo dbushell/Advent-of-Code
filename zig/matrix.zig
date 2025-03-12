@@ -38,11 +38,9 @@ pub fn Matrix(comptime T: type, comptime width: usize, comptime height: usize) t
         pub fn flip(self: *Self) void {
             const mask: @Vector(width * height, i32) = comptime calc: {
                 var array = [_]i32{0} ** (width * height);
-                for (0..height) |y| {
-                    for (0..width) |x| {
-                        array[width * y + x] = width * y + width - x - 1;
-                    }
-                }
+                for (0..height) |y| for (0..width) |x| {
+                    array[width * y + x] = width * y + width - x - 1;
+                };
                 break :calc array;
             };
             self.data = @shuffle(T, self.data, undefined, mask);
@@ -52,11 +50,9 @@ pub fn Matrix(comptime T: type, comptime width: usize, comptime height: usize) t
         pub fn rotate(self: *Self) void {
             const mask: @Vector(width * height, i32) = comptime calc: {
                 var array = [_]i32{0} ** (width * height);
-                for (0..height) |y| {
-                    for (0..width) |x| {
-                        array[width * y + width - x - 1] = width * x + y;
-                    }
-                }
+                for (0..height) |y| for (0..width) |x| {
+                    array[width * y + width - x - 1] = width * x + y;
+                };
                 break :calc array;
             };
             self.data = @shuffle(T, self.data, undefined, mask);
